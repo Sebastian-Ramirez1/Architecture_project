@@ -30,29 +30,43 @@ module ControlUnit(Instr, ID_OP, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load
     
             2'b00:
             begin
-                //op = Branch
-                ID_OP = op;
-                ID_jmpl_instr = 0;
-                ID_Read_Write = 0;
-                ID_SE_dm = 0;
-                ID_load_instr = 0;
-                ID_RF_enable = 0;
-                ID_size_dm = 0;
-                ID_modifyCC = 0;
-                ID_Call_instr = 0;
-                ID_B_instr = 1;
-                ID_29_a = Instr[29];
-                ID_ALU_op3 = 000000;
+                if (Instr == 32'b00000000000000000000000000000000) begin //check nop
+                    ID_OP = op;
+                    ID_jmpl_instr = 0;
+                    ID_Read_Write = 0;
+                    ID_SE_dm = 0;
+                    ID_load_instr = 0;
+                    ID_RF_enable = 0;
+                    ID_size_dm = 0;
+                    ID_modifyCC = 0;
+                    ID_Call_instr = 0;
+                    ID_B_instr = 0;
+                    ID_29_a = Instr[29];
+                    ID_ALU_op3 = 000000;
+                end else begin //op = Branch
+                    ID_OP = op;
+                    ID_jmpl_instr = 0;
+                    ID_Read_Write = 0;
+                    ID_SE_dm = 0;
+                    ID_load_instr = 0;
+                    ID_RF_enable = 0;
+                    ID_size_dm = 0;
+                    ID_modifyCC = 0;
+                    ID_Call_instr = 0;
+                    ID_B_instr = 1;
+                    ID_29_a = Instr[29];
+                    ID_ALU_op3 = 000000;
+                end
             end
 
             2'b10:
             begin
                 //op = Arithmetic or Jmpl
 
-                if(Instr[24:19] == 6'b111000) begin
+                if(Instr[24:19] == 6'b111000) begin //JMPL
                     ID_jmpl_instr = 1;
                     ID_modifyCC = 0;
-                end else if ( (Instr[24:19] == 6'b010000) || (Instr[24:19] == 6'b011000) || (Instr[24:19] == 6'b010100) || (Instr[24:19] == 6'b011100)) begin
+                end else if ( (Instr[24:19] == 6'b010000) || (Instr[24:19] == 6'b011000) || (Instr[24:19] == 6'b010100) || (Instr[24:19] == 6'b011100)) begin //can modify CC
                     ID_modifyCC = 1;
                     ID_jmpl_instr = 0;
                 end
@@ -155,9 +169,9 @@ module ControlUnit(Instr, ID_OP, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load
 
 endmodule
 
-module MuxControlSignal(S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_ALU_op3, ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_size_dm_out, ID_modifyCC_out, ID_Call_instr_out, ID_B_instr_out, ID_29_a_out, ID_ALU_op3_out);
+module MuxControlSignal(S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_ALU_op3, ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_size_dm_out, ID_modifyCC_out, ID_Call_instr_out, ID_B_instr_out, ID_ALU_op3_out);
     input S;
-    input ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a;
+    input ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr, ID_B_instr;
     input [1:0] ID_size_dm; 
     input [5:0] ID_ALU_op3;
     output reg ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_modifyCC_out, ID_Call_instr_out, ID_B_instr_out, ID_29_a_out;
@@ -178,7 +192,6 @@ module MuxControlSignal(S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr
                 ID_modifyCC_out = ID_modifyCC;
                 ID_Call_instr_out = ID_Call_instr;
                 ID_B_instr_out = ID_B_instr;
-                ID_29_a_out = ID_29_a;
                 ID_ALU_op3_out = ID_ALU_op3;
             end
                 
@@ -193,7 +206,6 @@ module MuxControlSignal(S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr
                 ID_modifyCC_out = 1'b0;
                 ID_Call_instr_out = 1'b0;
                 ID_B_instr_out = 1'b0;
-                ID_29_a_out = 1'b0;
                 ID_ALU_op3_out = 6'b000000;    
             end
                 
