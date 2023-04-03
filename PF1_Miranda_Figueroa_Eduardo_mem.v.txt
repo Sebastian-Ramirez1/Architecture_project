@@ -1,0 +1,207 @@
+module instructionram512x8 (
+  output reg [31:0] DataOut, input [7:0] Address
+);
+
+reg [7:0] Mem [0:511];
+always @(Address) begin
+  // Reading the Data
+    DataOut = {Mem[Address], Mem[Address+1], Mem[Address+2], Mem[Address+3]};
+    
+end
+
+endmodule
+
+module instructionramtb;
+integer fi, code;
+reg [31:0] data;
+reg [7:0] Address; wire [31:0] DataOut;
+instructionram512x8 ram1 (DataOut, Address);
+initial begin
+  Address = 8'b0;
+  fi = $fopen("memory.txt", "rb");
+ 
+  while (!$feof(fi)) begin
+    
+    code = $fscanf(fi, "%b", data);
+    ram1.Mem[Address] = data;
+    
+    Address = Address + 1;
+    
+  end
+  $fclose(fi);  
+   
+  Address = 8'b0;
+  
+end
+ // Reading at Addresses, 0, 4, 8, 12
+initial begin
+  Address= 0;
+  #1
+  Address = 4;
+  #1
+  Address = 8;
+  #1
+  Address = 12;
+end
+  initial begin
+    $monitor("A = %d, I = %h", Address, DataOut);
+  end
+  
+endmodule
+
+module data_ram512x8(output reg[31:0] DataOut, input[1:0] RW, input[7:0] Address, input[31:0] DataIn, input [1:0] Size, input [1:0] SE, input [1:0] E);
+
+  reg[7:0] Mem[0:511];
+  reg[7:0] address;
+  reg[31:0] data;
+ 
+    always @ (Size, Address, E, SE, DataIn, RW) begin
+    
+  if (E==1) begin
+    address = Address;
+    data = DataIn;
+    case (Size)
+      //Cases for R/W for bytes
+  2'b00:
+    //Reading bytes
+      if(RW == 0) begin
+        if (SE == 0) data = {24'b000000000000000000000000, Mem[address]};
+        else  data = {24'b111111111111111111111111, Mem[address]};
+        if (data[7] == 0)
+         data = {24'b000000000000000000000000, Mem[address]};
+      end
+    else  
+      //Writing Bytes
+      if(RW == 1) 
+        Mem[address] = data[7:0];
+   
+  
+
+ //R/W cases for Halfwords
+  2'b01:
+    //Reading Halfwords
+      if(RW == 0) begin
+        if (SE == 0) data = {16'b0000000000000000, Mem[address], Mem[address + 1]};
+        else data = {16'b1111111111111111, Mem[address], Mem[address + 1]};
+        if (data[15] == 0)
+        data = {16'b0000000000000000, Mem[address], Mem[address + 1]};
+  
+      end
+    // Writing Halfwords
+      else  if(RW == 1)begin
+        Mem[address] = data[15:8];
+        Mem[address+1] = data[7:0];
+        
+      end
+    
+     
+
+  //R/W cases for words
+   2'b10:
+    //Reading words
+    if(RW == 0) begin
+  
+        data = {Mem[address], Mem[address + 1], Mem[address + 2], Mem[address +3]};
+  
+      end
+  
+      //Writing words
+      else if (RW == 1 )begin
+      Mem[address] = data[31:24];
+      Mem[address + 1] = data[23:16];
+      Mem[address + 2] = data[15:8]; 
+        Mem[address + 3] = data[7:0];
+
+      end
+    endcase
+     DataOut = data;
+    
+  end
+end
+endmodule
+
+module dataramtb;
+ reg [1:0] RW; reg [31:0] DataIn; reg [1:0] Size; reg [1:0] SE; reg [1:0] E;
+  reg [7:0] Address; wire [31:0] DataOut;
+  integer fi, code;
+  data_ram512x8 ram1 (DataOut, RW, Address, DataIn, Size, SE, E);
+initial begin
+  Address = 7'b0;
+  fi= $fopen("memory.txt", "rb");
+  while (!$feof(fi)) begin
+    
+    code = $fscanf(fi, "%b", DataIn);
+    ram1.Mem[Address] = DataIn;
+   
+  Address = Address + 1;
+   
+  end
+  $fclose(fi);  
+  Address = 7'b0;
+end
+  initial begin 
+    //Reading without Shift Extender a Word at Addresses 0, 4, 8, 12
+    RW = 1'b0;
+    SE = 1'b0;
+    Address = 0; 
+    E = 1'b1;
+  Size = 2'b10; 
+  	#1 
+    Address = 4;
+    #1 
+    Address = 8;
+    #1 
+    Address = 12;
+    #1 
+    //Reading a byte at Address 0
+    Address = 0;
+    Size = 2'b00;
+    #1 
+    //Reading a halfword at Addresses 2 and 4
+    Address = 2;
+    Size = 2'b01;
+    #1 
+    Address = 4;
+    #1 
+    //Reading a byte at Address 0 with Shift Extender
+    Address = 0;
+    SE = 1'b1;
+    Size = 2'b00;
+    #1 
+    //Reading a halfword at Addresses 2 and 4 with Shift Extender
+    Address = 2;
+    Size = 2'b01;
+    #1 
+    Address = 4;
+    #1
+    //Writing a byte at Address 0
+     RW = 1'b1;
+    Address = 0;
+    DataIn = 8'h2c;
+    Size = 2'b00;
+    #1 
+    //Writing a halfword at Addreses 2 and 4
+    Size = 2'b01;
+    Address = 2;
+    DataIn = 16'hA23B;
+   	#1
+    Address = 4;
+    DataIn = 16'hB67a;
+    #1
+    //Writing a Word at Address 8
+    Address = 8;
+    Size = 2'b10;
+    DataIn = 24'h29a048;
+    #1
+    //Reading a Word at Addresses 0, 4, 8
+    RW = 2'b00;
+    Address = 0;
+    #1
+    Address = 4;
+    #1
+    Address = 8;
+  end
+  initial begin
+    $monitor("A = %d, DO = %h, Size = %b, R/W = %b, E = %b, SE = %b", Address, DataOut, Size, RW, E, SE);
+  end
+endmodule
