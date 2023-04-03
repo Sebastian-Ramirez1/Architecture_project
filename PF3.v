@@ -141,7 +141,7 @@ module ControlUnit(Instr, ID_OP, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load
                     ID_SE_dm = 'X; //Signed Extension
                     ID_load_instr = 1; //Enable
                     ID_RF_enable = 0; //Ubicar en Memoria solamente 
-                    ID_size_dm = 01; //byte
+                    ID_size_dm = 01; //halfword
                 end
                 6'b000100: //store word
                 begin
