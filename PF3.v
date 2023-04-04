@@ -1,8 +1,7 @@
-module ControlUnit(Instr, ID_OP, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_ALU_op3);
+module ControlUnit(Instr, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_ALU_op3);
     input [31:0] Instr;
     output reg ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a;
     output reg [1:0] ID_size_dm;
-    output reg [1:0] ID_OP;
     output reg [5:0] ID_ALU_op3;
 
     wire [1:0] op = Instr[31:30];
@@ -14,24 +13,22 @@ module ControlUnit(Instr, ID_OP, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load
             2'b01:
             begin
                 //op = CALL
-                ID_OP = op;
                 ID_jmpl_instr = 0;
-                ID_Read_Write = 'X;
-                ID_SE_dm = 'X;
+                ID_Read_Write = 1'bX;
+                ID_SE_dm = 1'bX;
                 ID_load_instr = 0;
                 ID_RF_enable = 1; //Write in R15 PC
-                ID_size_dm = 'X;
-                ID_modifyCC = 'X;
+                ID_size_dm = 1'bX;
+                ID_modifyCC = 0;
                 ID_Call_instr = 1;
                 ID_B_instr = 0;
-                ID_29_a = 'X;
-                ID_ALU_op3 = 'X;
+                ID_29_a = 1'bX;
+                ID_ALU_op3 = 1'bX;
             end
     
             2'b00:
             begin
                 if (Instr == 32'b00000000000000000000000000000000) begin //check nop
-                    ID_OP = op;
                     ID_jmpl_instr = 0;
                     ID_Read_Write = 0;
                     ID_SE_dm = 0;
@@ -44,7 +41,6 @@ module ControlUnit(Instr, ID_OP, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load
                     ID_29_a = Instr[29];
                     ID_ALU_op3 = 000000;
                 end else begin //op = Branch
-                    ID_OP = op;
                     ID_jmpl_instr = 0;
                     ID_Read_Write = 0;
                     ID_SE_dm = 0;
@@ -71,15 +67,14 @@ module ControlUnit(Instr, ID_OP, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load
                     ID_jmpl_instr = 0;
                 end
 
-                ID_OP = op;
-                ID_Read_Write = 'X;
-                ID_SE_dm = 'X;
+                ID_Read_Write = 1'bX;
+                ID_SE_dm = 1'bX;
                 ID_load_instr = 0;
                 ID_RF_enable = 1;
-                ID_size_dm = 'X;
+                ID_size_dm = 1'bX;
                 ID_Call_instr = 0;
                 ID_B_instr = 0;
-                ID_29_a = 'X;
+                ID_29_a = 1'bX;
                 ID_ALU_op3 = Instr[24:19];
             end
 
@@ -106,7 +101,7 @@ module ControlUnit(Instr, ID_OP, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load
                 6'b000000: //load word
                 begin
                     ID_Read_Write = 0; //Load = 0
-                    ID_SE_dm = 'X; //Signed Extension
+                    ID_SE_dm = 1'bX; //Signed Extension
                     ID_load_instr = 1; //Enable
                     ID_RF_enable = 1; //Ubicar en Rd un valor de memoria 
                     ID_size_dm = 10; //word
@@ -130,7 +125,7 @@ module ControlUnit(Instr, ID_OP, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load
                 6'b000101: //store byte
                 begin
                     ID_Read_Write = 1; //Store = 1
-                    ID_SE_dm = 'X; //Signed Extension
+                    ID_SE_dm = 1'bX; //Signed Extension
                     ID_load_instr = 1; //Enable
                     ID_RF_enable = 0; //Ubicar en Memoria solamente 
                     ID_size_dm = 00; //byte
@@ -138,7 +133,7 @@ module ControlUnit(Instr, ID_OP, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load
                 6'b000110: //store halfword
                 begin
                     ID_Read_Write = 1; //Store = 1
-                    ID_SE_dm = 'X; //Signed Extension
+                    ID_SE_dm = 1'bX; //Signed Extension
                     ID_load_instr = 1; //Enable
                     ID_RF_enable = 0; //Ubicar en Memoria solamente 
                     ID_size_dm = 01; //byte
@@ -146,18 +141,17 @@ module ControlUnit(Instr, ID_OP, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load
                 6'b000100: //store word
                 begin
                     ID_Read_Write = 1; //Store = 1
-                    ID_SE_dm = 'X; //Signed Extension
+                    ID_SE_dm = 1'bX; //Signed Extension
                     ID_load_instr = 1; //Enable
                     ID_RF_enable = 0; //Ubicar en Memoria solamente 
                     ID_size_dm = 10; //Word
                 end
                 endcase
-                ID_OP = op;
                 ID_jmpl_instr = 0;
                 ID_modifyCC = 0;
                 ID_Call_instr = 0;
                 ID_B_instr = 0;
-                ID_29_a = 'X;
+                ID_29_a = 1'bX;
                 ID_ALU_op3 =Instr[24:19];
             end
 
