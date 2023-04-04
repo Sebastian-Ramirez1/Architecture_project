@@ -18,12 +18,12 @@ module ControlUnit(Instr, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr,
                 ID_SE_dm = 1'bX;
                 ID_load_instr = 0;
                 ID_RF_enable = 1; //Write in R15 PC
-                ID_size_dm = 1'bX;
+                ID_size_dm = 2'bXX;
                 ID_modifyCC = 0;
                 ID_Call_instr = 1;
                 ID_B_instr = 0;
                 ID_29_a = 1'bX;
-                ID_ALU_op3 = 1'bX;
+                ID_ALU_op3 = 6'bXXXXXX;
             end
     
             2'b00:
@@ -34,7 +34,7 @@ module ControlUnit(Instr, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr,
                     ID_SE_dm = 0;
                     ID_load_instr = 0;
                     ID_RF_enable = 0;
-                    ID_size_dm = 0;
+                    ID_size_dm = 00;
                     ID_modifyCC = 0;
                     ID_Call_instr = 0;
                     ID_B_instr = 0;
@@ -43,7 +43,7 @@ module ControlUnit(Instr, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr,
                 end else begin //op = Branch
                     ID_jmpl_instr = 0;
                     ID_Read_Write = 0;
-                    ID_SE_dm = 0;
+                    ID_SE_dm = 00;
                     ID_load_instr = 0;
                     ID_RF_enable = 0;
                     ID_size_dm = 0;
@@ -58,6 +58,7 @@ module ControlUnit(Instr, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr,
             2'b10:
             begin
                 //op = Arithmetic or Jmpl
+                //bit 23 = 1 modifyCC = 1 else modifyCC = 0
 
                 if(Instr[24:19] == 6'b111000) begin //JMPL
                     ID_jmpl_instr = 1;
@@ -71,11 +72,11 @@ module ControlUnit(Instr, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr,
                 ID_SE_dm = 1'bX;
                 ID_load_instr = 0;
                 ID_RF_enable = 1;
-                ID_size_dm = 1'bX;
+                ID_size_dm = 2'bXX;
                 ID_Call_instr = 0;
                 ID_B_instr = 0;
                 ID_29_a = 1'bX;
-                ID_ALU_op3 = Instr[24:19];
+                ID_ALU_op3 = Instr[24:19]; //change to 4bits
             end
 
             2'b11:
@@ -163,12 +164,12 @@ module ControlUnit(Instr, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr,
 
 endmodule
 
-module MuxControlSignal(S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_ALU_op3, ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_size_dm_out, ID_modifyCC_out, ID_Call_instr_out, ID_B_instr_out, ID_ALU_op3_out);
+module MuxControlSignal(S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_ALU_op3, ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_size_dm_out, ID_modifyCC_out, ID_Call_instr_out, ID_ALU_op3_out);
     input S;
-    input ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr, ID_B_instr;
+    input ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr;
     input [1:0] ID_size_dm; 
     input [5:0] ID_ALU_op3;
-    output reg ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_modifyCC_out, ID_Call_instr_out, ID_B_instr_out, ID_29_a_out;
+    output reg ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_modifyCC_out, ID_Call_instr_out, ID_29_a_out;
     output reg [1:0] ID_size_dm_out;
     output reg [5:0] ID_ALU_op3_out;
 
@@ -185,7 +186,6 @@ module MuxControlSignal(S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr
                 ID_size_dm_out = ID_size_dm;
                 ID_modifyCC_out = ID_modifyCC;
                 ID_Call_instr_out = ID_Call_instr;
-                ID_B_instr_out = ID_B_instr;
                 ID_ALU_op3_out = ID_ALU_op3;
             end
                 
@@ -199,7 +199,6 @@ module MuxControlSignal(S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr
                 ID_size_dm_out = 2'b00;
                 ID_modifyCC_out = 1'b0;
                 ID_Call_instr_out = 1'b0;
-                ID_B_instr_out = 1'b0;
                 ID_ALU_op3_out = 6'b000000;    
             end
                 
@@ -283,13 +282,13 @@ always @(posedge Clk, R, LE) //0 --> 1 en Clk: entra al if
     
 endmodule
 
-module PipelineRegister_ID_EX(Clk, Instr, Q, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_jmpl_instr_out, EX_Read_Write_out, EX_ALU_op3_out, EX_SE_dm_out, EX_load_instr_out, EX_RF_enable_out, EX_size_dm_out, EX_modifyCC_out);
+module PipelineRegister_ID_EX(Clk, Instr, Q, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_call_instr, EX_jmpl_instr_out, EX_Read_Write_out, EX_ALU_op3_out, EX_SE_dm_out, EX_load_instr_out, EX_RF_enable_out, EX_size_dm_out, EX_modifyCC_out, EX_call_instr_out);
     input [31:0] Instr;
     input Clk;
-    input EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable , EX_modifyCC;
+    input EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable , EX_modifyCC, EX_call_instr;
     input [1:0] EX_size_dm;
     input [5:0] EX_ALU_op3;
-    output reg EX_jmpl_instr_out, EX_Read_Write_out, EX_SE_dm_out, EX_load_instr_out, EX_RF_enable_out , EX_modifyCC_out;
+    output reg EX_jmpl_instr_out, EX_Read_Write_out, EX_SE_dm_out, EX_load_instr_out, EX_RF_enable_out , EX_modifyCC_out, EX_call_instr_out;
     output reg [1:0] EX_size_dm_out;
     output reg [5:0] EX_ALU_op3_out;
     output reg [31:0] Q;
@@ -305,16 +304,17 @@ always @(posedge Clk) //0 --> 1 en Clk: entra al if
         EX_RF_enable_out <= EX_RF_enable; 
         EX_size_dm_out <= EX_size_dm; 
         EX_modifyCC_out <= EX_modifyCC;
+        EX_call_instr_out <= EX_call_instr;
     end
     
 endmodule
 
-module PipelineRegister_EX_MEM(Clk, Instr, Q, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_jmpl_instr_out, MEM_Read_Write_out, MEM_SE_dm_out, MEM_load_instr_out, MEM_RF_enable_out, MEM_size_dm_out);
+module PipelineRegister_EX_MEM(Clk, Instr, Q, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_call_instr, MEM_jmpl_instr_out, MEM_Read_Write_out, MEM_SE_dm_out, MEM_load_instr_out, MEM_RF_enable_out, MEM_size_dm_out, MEM_call_instr_out);
     input [31:0] Instr;
     input Clk;
-    input MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable;
+    input MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_call_instr;
     input [1:0] MEM_size_dm;
-    output reg MEM_jmpl_instr_out, MEM_Read_Write_out, MEM_SE_dm_out, MEM_load_instr_out, MEM_RF_enable_out;
+    output reg MEM_jmpl_instr_out, MEM_Read_Write_out, MEM_SE_dm_out, MEM_load_instr_out, MEM_RF_enable_out, MEM_call_instr_out;
     output reg [1:0] MEM_size_dm_out;
     output reg [31:0] Q;
 
@@ -327,6 +327,7 @@ always @(posedge Clk) //0 --> 1 en Clk: entra al if
         MEM_load_instr_out <= MEM_load_instr; 
         MEM_RF_enable_out <= MEM_RF_enable; 
         MEM_size_dm_out <= MEM_size_dm;
+        MEM_call_instr_out <= MEM_call_instr;
     end
     
 endmodule

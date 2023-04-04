@@ -18,12 +18,12 @@ module ControlUnitModuloPrueba;
     wire [5:0] ID_ALU_op3_out;
 
     //Output Control Signals for PipelineRegister_ID_EX
-    wire EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_modifyCC;
+    wire EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_modifyCC, EX_call_instr;
     wire [1:0] EX_size_dm; 
     wire [5:0] EX_ALU_op3;
 
     //Output Control Signals for PipelineRegister_EX_MEM
-    wire MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable;
+    wire MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_call_instr;
     wire [1:0] MEM_size_dm;
     
     //Output Control Signals for PipelineRegister_MEM_WB
@@ -54,11 +54,11 @@ module ControlUnitModuloPrueba;
     PipelineRegister_IF_ID PipelineRegister_IF_ID(Clk, InstructionMemory_Out, PipelineRegister_IF_ID_Out, LE, R);
 
     ControlUnit ControlUnit(PipelineRegister_IF_ID_Out, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_ALU_op3);
-    MuxControlSignal MuxControlSignal(S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_ALU_op3, ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_size_dm_out, ID_modifyCC_out, ID_Call_instr_out, ID_B_instr_out, ID_ALU_op3_out);
+    MuxControlSignal MuxControlSignal(S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_ALU_op3, ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_size_dm_out, ID_modifyCC_out, ID_Call_instr_out, ID_ALU_op3_out);
 
-    PipelineRegister_ID_EX PipelineRegister_ID_EX(Clk, PipelineRegister_IF_ID_Out, PipelineRegister_ID_EX_Out, ID_jmpl_instr_out, ID_Read_Write_out, ID_ALU_op3_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_size_dm_out, ID_modifyCC_out, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC);
+    PipelineRegister_ID_EX PipelineRegister_ID_EX(Clk, PipelineRegister_IF_ID_Out, PipelineRegister_ID_EX_Out, ID_jmpl_instr_out, ID_Read_Write_out, ID_ALU_op3_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_size_dm_out, ID_modifyCC_out, ID_Call_instr_out, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_call_instr);
 
-    PipelineRegister_EX_MEM PipelineRegister_EX_MEM(Clk, PipelineRegister_ID_EX_Out, PipelineRegister_EX_MEM_Out, EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm);
+    PipelineRegister_EX_MEM PipelineRegister_EX_MEM(Clk, PipelineRegister_ID_EX_Out, PipelineRegister_EX_MEM_Out, EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_call_instr, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_call_instr);
 
     PipelineRegister_MEM_WB PipelineRegister_MEM_WB(Clk, PipelineRegister_EX_MEM_Out, PipelineRegister_MEM_WB_Out, MEM_RF_enable, WB_RF_enable);
 
@@ -96,8 +96,8 @@ module ControlUnitModuloPrueba;
     end
 
     initial begin
-        $monitor("Instruccion: %b PC: %d nPC: %d Clk: %b  Reset: %b  LE %b  S %b  Time: %d \n ID_ALU_op3 %b ID_jmpl_instr: %b , ID_Read_Write: %b , ID_SE_dm: %b , ID_load_instr: %b , ID_RF_enable: %b , ID_size_dm: %b , ID_modifyCC: %b , ID_Call_instr: %b , ID_B_instr: %b , ID_29_a: %b \n EX_jmpl_instr: %b, EX_ALU_op: %b , EX_Read_Write: %b, EX_SE_dm: %b , EX_load_instr: %b , EX_RF_enable: %b, EX_size_dm: %b , EX_modifyCC: %b \n MEM_jmpl_instr: %b , MEM_Read_Write: %b , MEM_SE_dm: %b , MEM_load_instr: %b , MEM_RF_enable: %b , MEM_size_dm: %b \n WB_RF_enable: %b\n", PipelineRegister_IF_ID_Out, PC_Out, PC_In, Clk, R, LE, S, $time, ID_ALU_op3, ID_jmpl_instr_out, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, EX_jmpl_instr, EX_ALU_op3, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, WB_RF_enable);
+        $monitor("Instruccion: %b PC: %d nPC: %d Clk: %b  Reset: %b  LE %b  S %b  Time: %d \n ID_ALU_op3 %b ID_jmpl_instr: %b , ID_Read_Write: %b , ID_SE_dm: %b , ID_load_instr: %b , ID_RF_enable: %b , ID_size_dm: %b , ID_modifyCC: %b , ID_Call_instr: %b , ID_B_instr: %b , ID_29_a: %b \n EX_jmpl_instr: %b, EX_ALU_op: %b , EX_Read_Write: %b, EX_SE_dm: %b , EX_load_instr: %b , EX_RF_enable: %b, EX_size_dm: %b , EX_modifyCC: %b , EX_call_instr: %b \n MEM_jmpl_instr: %b , MEM_Read_Write: %b , MEM_SE_dm: %b , MEM_load_instr: %b , MEM_RF_enable: %b , MEM_size_dm: %b , MEM_call_instr: %b \n WB_RF_enable: %b\n", PipelineRegister_IF_ID_Out, PC_Out, PC_In, Clk, R, LE, S, $time, ID_ALU_op3, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, EX_jmpl_instr, EX_ALU_op3, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_call_instr, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_call_instr, WB_RF_enable);
 
     end
-     
+    
 endmodule
