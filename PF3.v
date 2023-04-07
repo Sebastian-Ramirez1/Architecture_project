@@ -248,7 +248,7 @@ module PC (Clk, D, Q, LE, R);
     output reg [7:0] Q;
     //output reg [31:0] Q;
 
-always @(posedge Clk, R) //0 --> 1 en Clk: entra al if
+    always @(posedge Clk, R) //0 --> 1 en Clk: entra al if
     begin
         if (R) Q <= 8'b00000000; //un reset tienen el efecto de hacer cero todos los bits de salida del registro. 
         else if (LE) Q <= D; // LE = 1  D --> Q
@@ -274,7 +274,7 @@ module PipelineRegister_IF_ID(Clk, Instr, Q, LE, R);
     input R;
     output reg [31:0] Q;
 
-always @(posedge Clk, R, LE) //0 --> 1 en Clk: entra al if
+    always @(posedge Clk, R, LE) //0 --> 1 en Clk: entra al if
     begin
         if (R) Q <= 32'b00000000000000000000000000000000; //un reset tienen el efecto de hacer cero todos los bits de salida del registro. 
         else if (LE) Q <= Instr; // LE = 1  D --> Q
@@ -293,7 +293,7 @@ module PipelineRegister_ID_EX(Clk, Instr, Q, EX_jmpl_instr, EX_Read_Write, EX_AL
     output reg [5:0] EX_ALU_op3_out;
     output reg [31:0] Q;
 
-always @(posedge Clk) //0 --> 1 en Clk: entra al if
+    always @(posedge Clk) //0 --> 1 en Clk: entra al if
     begin
         Q <= Instr; //Output <= Input
         EX_jmpl_instr_out <= EX_jmpl_instr;
@@ -318,7 +318,7 @@ module PipelineRegister_EX_MEM(Clk, Instr, Q, MEM_jmpl_instr, MEM_Read_Write, ME
     output reg [1:0] MEM_size_dm_out;
     output reg [31:0] Q;
 
-always @(posedge Clk) //0 --> 1 en Clk: entra al if
+    always @(posedge Clk) //0 --> 1 en Clk: entra al if
     begin
         Q <= Instr; //Output <= Input
         MEM_jmpl_instr_out <= MEM_jmpl_instr;
@@ -339,7 +339,7 @@ module PipelineRegister_MEM_WB(Clk, Instr, Q, WB_RF_enable, WB_RF_enable_out);
     output reg WB_RF_enable_out;
     output reg [31:0] Q;
 
-always @(posedge Clk) //0 --> 1 en Clk: entra al if
+    always @(posedge Clk) //0 --> 1 en Clk: entra al if
     begin
         Q <= Instr; //Output <= Input
         WB_RF_enable_out <= WB_RF_enable; 
