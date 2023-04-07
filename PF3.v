@@ -1,4 +1,4 @@
-module ControlUnit(Instr, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_ALU_op3);
+module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_ALU_op3, Instr);
     input [31:0] Instr;
     output reg ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a;
     output reg [1:0] ID_size_dm;
@@ -164,7 +164,7 @@ module ControlUnit(Instr, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr,
 
 endmodule
 
-module MuxControlSignal(S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_ALU_op3, ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_size_dm_out, ID_modifyCC_out, ID_Call_instr_out, ID_ALU_op3_out);
+module MuxControlSignal(ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_size_dm_out, ID_modifyCC_out, ID_Call_instr_out, ID_ALU_op3_out, S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_ALU_op3);
     input S;
     input ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr;
     input [1:0] ID_size_dm; 
@@ -209,7 +209,7 @@ module MuxControlSignal(S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr
     
 endmodule
 
-module Sumador4(PC, nPC); 
+module Sumador4(nPC, PC); 
     //input [31:0] PC;
     //output reg [31:0] nPC;
     input [7:0] PC;
@@ -222,7 +222,7 @@ module Sumador4(PC, nPC);
     
 endmodule
 
-module nPC (Clk, D, Q, LE, R);
+module nPC (Q, Clk, D, LE, R);
    //input [31:0] D;
     input [7:0] D;
     input LE;
@@ -239,7 +239,7 @@ module nPC (Clk, D, Q, LE, R);
 
 endmodule
 
-module PC (Clk, D, Q, LE, R);
+module PC (Q, Clk, D, LE, R);
     //input [31:0] D;
     input [7:0] D;
     input LE;
@@ -267,7 +267,7 @@ module InstructionMemory (output reg [31:0] DataOut, input [7:0] Address);
 
 endmodule
 
-module PipelineRegister_IF_ID(Clk, Instr, Q, LE, R);
+module PipelineRegister_IF_ID(Q, Clk, Instr, LE, R);
     input [31:0] Instr;
     input LE;
     input Clk;
@@ -282,67 +282,67 @@ module PipelineRegister_IF_ID(Clk, Instr, Q, LE, R);
     
 endmodule
 
-module PipelineRegister_ID_EX(Clk, Instr, Q, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_call_instr, EX_jmpl_instr_out, EX_Read_Write_out, EX_ALU_op3_out, EX_SE_dm_out, EX_load_instr_out, EX_RF_enable_out, EX_size_dm_out, EX_modifyCC_out, EX_call_instr_out);
+module PipelineRegister_ID_EX(Q, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_call_instr, Clk, Instr, ID_jmpl_instr, ID_Read_Write, ID_ALU_op3, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_call_instr);
     input [31:0] Instr;
     input Clk;
-    input EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable , EX_modifyCC, EX_call_instr;
+    input ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable , ID_modifyCC, ID_call_instr;
+    input [1:0] ID_size_dm;
+    input [5:0] ID_ALU_op3;
+    output reg EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable , EX_modifyCC, EX_call_instr;
+    output reg [1:0] EX_size_dm;
+    output reg [5:0] EX_ALU_op3;
+    output reg [31:0] Q;
+
+    always @(posedge Clk) //0 --> 1 en Clk: entra al if
+    begin
+        Q <= Instr; //Output <= Input
+        EX_jmpl_instr <= ID_jmpl_instr;
+        EX_Read_Write <= ID_Read_Write;
+        EX_ALU_op3 <= ID_ALU_op3; 
+        EX_SE_dm <= ID_SE_dm; 
+        EX_load_instr <= ID_load_instr; 
+        EX_RF_enable <= ID_RF_enable; 
+        EX_size_dm <= ID_size_dm; 
+        EX_modifyCC <= ID_modifyCC;
+        EX_call_instr <= ID_call_instr;
+    end
+    
+endmodule
+
+module PipelineRegister_EX_MEM(Q, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_call_instr, Clk, Instr, EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_call_instr);
+    input [31:0] Instr;
+    input Clk;
+    input EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_call_instr;
     input [1:0] EX_size_dm;
-    input [5:0] EX_ALU_op3;
-    output reg EX_jmpl_instr_out, EX_Read_Write_out, EX_SE_dm_out, EX_load_instr_out, EX_RF_enable_out , EX_modifyCC_out, EX_call_instr_out;
-    output reg [1:0] EX_size_dm_out;
-    output reg [5:0] EX_ALU_op3_out;
+    output reg MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_call_instr;
+    output reg [1:0] MEM_size_dm;
     output reg [31:0] Q;
 
     always @(posedge Clk) //0 --> 1 en Clk: entra al if
     begin
         Q <= Instr; //Output <= Input
-        EX_jmpl_instr_out <= EX_jmpl_instr;
-        EX_Read_Write_out <= EX_Read_Write;
-        EX_ALU_op3_out <= EX_ALU_op3; 
-        EX_SE_dm_out <= EX_SE_dm; 
-        EX_load_instr_out <= EX_load_instr; 
-        EX_RF_enable_out <= EX_RF_enable; 
-        EX_size_dm_out <= EX_size_dm; 
-        EX_modifyCC_out <= EX_modifyCC;
-        EX_call_instr_out <= EX_call_instr;
+        MEM_jmpl_instr <= EX_jmpl_instr;
+        MEM_Read_Write <= EX_Read_Write;
+        MEM_SE_dm <= EX_SE_dm; 
+        MEM_load_instr <= EX_load_instr; 
+        MEM_RF_enable <= EX_RF_enable; 
+        MEM_size_dm <= EX_size_dm;
+        MEM_call_instr <= EX_call_instr;
     end
     
 endmodule
 
-module PipelineRegister_EX_MEM(Clk, Instr, Q, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_call_instr, MEM_jmpl_instr_out, MEM_Read_Write_out, MEM_SE_dm_out, MEM_load_instr_out, MEM_RF_enable_out, MEM_size_dm_out, MEM_call_instr_out);
+module PipelineRegister_MEM_WB(Q, WB_RF_enable, Clk, Instr, MEM_RF_enable);
     input [31:0] Instr;
     input Clk;
-    input MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_call_instr;
-    input [1:0] MEM_size_dm;
-    output reg MEM_jmpl_instr_out, MEM_Read_Write_out, MEM_SE_dm_out, MEM_load_instr_out, MEM_RF_enable_out, MEM_call_instr_out;
-    output reg [1:0] MEM_size_dm_out;
+    input MEM_RF_enable;
+    output reg WB_RF_enable;
     output reg [31:0] Q;
 
     always @(posedge Clk) //0 --> 1 en Clk: entra al if
     begin
         Q <= Instr; //Output <= Input
-        MEM_jmpl_instr_out <= MEM_jmpl_instr;
-        MEM_Read_Write_out <= MEM_Read_Write;
-        MEM_SE_dm_out <= MEM_SE_dm; 
-        MEM_load_instr_out <= MEM_load_instr; 
-        MEM_RF_enable_out <= MEM_RF_enable; 
-        MEM_size_dm_out <= MEM_size_dm;
-        MEM_call_instr_out <= MEM_call_instr;
-    end
-    
-endmodule
-
-module PipelineRegister_MEM_WB(Clk, Instr, Q, WB_RF_enable, WB_RF_enable_out);
-    input [31:0] Instr;
-    input Clk;
-    input WB_RF_enable;
-    output reg WB_RF_enable_out;
-    output reg [31:0] Q;
-
-    always @(posedge Clk) //0 --> 1 en Clk: entra al if
-    begin
-        Q <= Instr; //Output <= Input
-        WB_RF_enable_out <= WB_RF_enable; 
+        WB_RF_enable <= MEM_RF_enable; 
     end
     
 endmodule
