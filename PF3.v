@@ -43,10 +43,10 @@ module ControlUnit(Instr, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr,
                 end else begin //op = Branch
                     ID_jmpl_instr = 0;
                     ID_Read_Write = 0;
-                    ID_SE_dm = 00;
+                    ID_SE_dm = 0;
                     ID_load_instr = 0;
                     ID_RF_enable = 0;
-                    ID_size_dm = 0;
+                    ID_size_dm = 00;
                     ID_modifyCC = 0;
                     ID_Call_instr = 0;
                     ID_B_instr = 1;
