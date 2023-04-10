@@ -46,7 +46,7 @@ module ControlUnitModuloPrueba;
     wire [31:0] InstructionMemory_Out; //Output_InsturctionMemory => Input_PipeplineRegister_IF_ID
 
     PC PC(PC_Out, Clk, PC_In, LE, R); //instancia de PC
-    Sumador4 Sumador4(Sumador4_Out, PC_Out); // instancia de Sumador de PC
+    Sumador4 Sumador4(Sumador4_Out, PC_In); // instancia de Sumador de PC
     nPC nPC(PC_In, Clk, Sumador4_Out, LE, R); // instancia de nPC
     
     InstructionMemory InstructionMemory(InstructionMemory_Out, PC_Out); //instancia de instruction memory
@@ -62,7 +62,7 @@ module ControlUnitModuloPrueba;
 
     PipelineRegister_MEM_WB PipelineRegister_MEM_WB(PipelineRegister_MEM_WB_Out, WB_RF_enable, Clk, PipelineRegister_EX_MEM_Out, MEM_RF_enable);
 
-    initial #52 $finish;
+    initial #56 $finish;
 
     //Precargar file a Intruction Memory
     initial begin
@@ -79,24 +79,24 @@ module ControlUnitModuloPrueba;
     end
 
     initial begin
-        Clk = 0; //La simulación debe comenzar inicializando Clk en cero a tiempo cero. Entonces, debe cambiar de estado cada dos unidades de tiempo de manera perpetua.
+        Clk = 1'b0; //La simulación debe comenzar inicializando Clk en cero a tiempo cero. Entonces, debe cambiar de estado cada dos unidades de tiempo de manera perpetua.
         LE = 1'b1;
         forever #2 Clk = ~Clk;
     end
 
     initial begin
-        R = 1; // La señal Reset debe tener un valor de 1 a tiempo cero y cambiar a 0 en tiempo 1. 
-        #1 R = 0;
-
+        R = 1'b1; // La señal Reset debe tener un valor de 1 a tiempo cero y cambiar a 0 en tiempo 1. 
+        #3 R = ~R;
     end
 
     initial begin
-        S = 0;  //La señal S del multiplexer debe tener un valor de cero a tiempo cero y debe cambiar a 1 a tiempo 40.
+        S = 1'b0;  //La señal S del multiplexer debe tener un valor de cero a tiempo cero y debe cambiar a 1 a tiempo 40.
         #40 S = ~S; 
     end
 
     initial begin
-        $monitor("Instruccion: %b PC: %d nPC: %d Clk: %b  Reset: %b  LE %b  S %b  Time: %d \n ID_ALU_op3 %b ID_jmpl_instr: %b , ID_Read_Write: %b , ID_SE_dm: %b , ID_load_instr: %b , ID_RF_enable: %b , ID_size_dm: %b , ID_modifyCC: %b , ID_Call_instr: %b , ID_B_instr: %b , ID_29_a: %b \n EX_jmpl_instr: %b, EX_ALU_op: %b , EX_Read_Write: %b, EX_SE_dm: %b , EX_load_instr: %b , EX_RF_enable: %b, EX_size_dm: %b , EX_modifyCC: %b , EX_call_instr: %b \n MEM_jmpl_instr: %b , MEM_Read_Write: %b , MEM_SE_dm: %b , MEM_load_instr: %b , MEM_RF_enable: %b , MEM_size_dm: %b , MEM_call_instr: %b \n WB_RF_enable: %b\n", InstructionMemory_Out, PC_Out, Sumador4_Out, Clk, R, LE, S, $time, ID_ALU_op3, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, EX_jmpl_instr, EX_ALU_op3, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_call_instr, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_call_instr, WB_RF_enable);
+        $monitor("Instruccion: %b PC: %d nPC: %d Clk: %b  Reset: %b  LE: %b  S: %b  Time: %d \n ID_ALU_op3 %b ID_jmpl_instr: %b , ID_Read_Write: %b , ID_SE_dm: %b , ID_load_instr: %b , ID_RF_enable: %b , ID_size_dm: %b , ID_modifyCC: %b , ID_Call_instr: %b , ID_B_instr: %b , ID_29_a: %b \n EX_jmpl_instr: %b, EX_ALU_op: %b , EX_Read_Write: %b, EX_SE_dm: %b , EX_load_instr: %b , EX_RF_enable: %b, EX_size_dm: %b , EX_modifyCC: %b , EX_call_instr: %b \n MEM_jmpl_instr: %b , MEM_Read_Write: %b , MEM_SE_dm: %b , MEM_load_instr: %b , MEM_RF_enable: %b , MEM_size_dm: %b , MEM_call_instr: %b \n WB_RF_enable: %b\n", PipelineRegister_IF_ID_Out, PC_Out, PC_In, Clk, R, LE, S, $time, ID_ALU_op3, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, EX_jmpl_instr, EX_ALU_op3, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_call_instr, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_call_instr, WB_RF_enable);
+        //$monitor("Instruccion: %b, PC: %d, nPC: %d, Sumador4: %d,  Clk: %b, R: %b, LE: %b , S: %b, Time: %d", PipelineRegister_IF_ID_Out, PC_Out, PC_In ,Sumador4_Out, Clk, R, LE, S, $time);
 
     end
     

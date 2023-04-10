@@ -210,49 +210,38 @@ module MuxControlSignal(ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_l
 endmodule
 
 module Sumador4(nPC, PC); 
-    //input [31:0] PC;
-    //output reg [31:0] nPC;
     input [7:0] PC;
     output reg [7:0] nPC;
-    always @(PC, nPC) 
+    always @(PC) 
         begin
-            //wire [31:0] sum = PC + 4;
-            nPC = PC + 4;
+            nPC = PC + 4; //nPC = nPC +4
         end
     
 endmodule
 
 module nPC (Q, Clk, D, LE, R);
-   //input [31:0] D;
     input [7:0] D;
     input LE;
     input Clk;
     input R;
     output reg [7:0] Q;
-    //output reg [31:0] Q;
 
-    always @(posedge Clk, R) //0 --> 1 en Clk: entra al if
-        begin
-            if (R) Q <= 8'b0000100; //En el caso de nPC un reset produce un número binario correspondiente a un 4.
-            else if (LE) Q <= D; // LE = 1  D --> Q
-        end
+    always @(posedge Clk) //0 --> 1 en Clk: entra al if
+        if (R) Q <= 8'b0000100; //En el caso de nPC un reset produce un número binario correspondiente a un 4.
+        else if (LE) Q <= D; // LE = 1  D --> Q
 
 endmodule
 
 module PC (Q, Clk, D, LE, R);
-    //input [31:0] D;
     input [7:0] D;
     input LE;
     input Clk;
     input R;
     output reg [7:0] Q;
-    //output reg [31:0] Q;
 
-    always @(posedge Clk, R) //0 --> 1 en Clk: entra al if
-    begin
+    always @(posedge Clk) //0 --> 1 en Clk: entra al if
         if (R) Q <= 8'b00000000; //un reset tienen el efecto de hacer cero todos los bits de salida del registro. 
         else if (LE) Q <= D; // LE = 1  D --> Q
-    end
     
 endmodule
 
@@ -274,7 +263,7 @@ module PipelineRegister_IF_ID(Q, Clk, Instr, LE, R);
     input R;
     output reg [31:0] Q;
 
-    always @(posedge Clk, R, LE) //0 --> 1 en Clk: entra al if
+    always @(posedge Clk) //0 --> 1 en Clk: entra al if
     begin
         if (R) Q <= 32'b00000000000000000000000000000000; //un reset tienen el efecto de hacer cero todos los bits de salida del registro. 
         else if (LE) Q <= Instr; // LE = 1  D --> Q
