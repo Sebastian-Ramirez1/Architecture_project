@@ -2,7 +2,7 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
     input [31:0] Instr;
     output reg ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a;
     output reg [1:0] ID_size_dm;
-    output reg [5:0] ID_ALU_op3;
+    output reg [5:0] ID_ALU_op3; //should be 4bits for our ALU
 
     wire [1:0] op = Instr[31:30];
 
@@ -14,7 +14,7 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
             begin
                 //op = CALL
                 ID_jmpl_instr = 0;
-                ID_Read_Write = 1'bX;
+                ID_Read_Write = 1'bX; //eliminate dont care //leer //no modificar registros
                 ID_SE_dm = 1'bX;
                 ID_load_instr = 0;
                 ID_RF_enable = 1; //Write in R15 PC
@@ -77,6 +77,7 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
                 ID_B_instr = 0;
                 ID_29_a = 1'bX;
                 ID_ALU_op3 = Instr[24:19]; //change to 4bits
+                //identify op3(6bits) and decodify op3(4bits) for our ALU
             end
 
             2'b11:
@@ -233,7 +234,7 @@ module nPC (Q, Clk, D, LE, R);
 endmodule
 
 module PC (Q, Clk, D, LE, R);
-    input [7:0] D;
+    input [7:0] D; //cambiar a 9bits
     input LE;
     input Clk;
     input R;
@@ -256,7 +257,7 @@ module InstructionMemory (output reg [31:0] DataOut, input [7:0] Address);
 
 endmodule
 
-module PipelineRegister_IF_ID(Q, Clk, Instr, LE, R);
+module PipelineRegister_IF_ID(Q, Clk, Instr, LE, R); //eliminar LE 
     input [31:0] Instr;
     input LE;
     input Clk;
@@ -266,12 +267,14 @@ module PipelineRegister_IF_ID(Q, Clk, Instr, LE, R);
     always @(posedge Clk) //0 --> 1 en Clk: entra al if
     begin
         if (R) Q <= 32'b00000000000000000000000000000000; //un reset tienen el efecto de hacer cero todos los bits de salida del registro. 
-        else if (LE) Q <= Instr; // LE = 1  D --> Q
+        else if (LE) Q <= Instr; // LE = 1  D --> Q //else
     end
     
 endmodule
 
 module PipelineRegister_ID_EX(Q, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_call_instr, Clk, Instr, ID_jmpl_instr, ID_Read_Write, ID_ALU_op3, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_call_instr);
+    //add Reset to all PipelineRegisters
+    //NO enviar Instruccion, solamente control_signals
     input [31:0] Instr;
     input Clk;
     input ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable , ID_modifyCC, ID_call_instr;
@@ -280,7 +283,7 @@ module PipelineRegister_ID_EX(Q, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE
     output reg EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable , EX_modifyCC, EX_call_instr;
     output reg [1:0] EX_size_dm;
     output reg [5:0] EX_ALU_op3;
-    output reg [31:0] Q;
+    output reg [31:0] Q; //concatenacion de todas senales;
 
     always @(posedge Clk) //0 --> 1 en Clk: entra al if
     begin
