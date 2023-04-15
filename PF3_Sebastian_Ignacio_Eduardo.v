@@ -1,8 +1,8 @@
-module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_ALU_op3, Instr);
+module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_ALU_op3, ID_DataMem_enable, Instr);
     input [31:0] Instr;
-    output reg ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a;
+    output reg ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_DataMem_enable;
     output reg [1:0] ID_size_dm;
-    output reg [5:0] ID_ALU_op3; //should be 4bits for our ALU
+    output reg [3:0] ID_ALU_op3; //should be 4bits for our ALU
 
     wire [1:0] op = Instr[31:30];
 
@@ -15,15 +15,16 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
                 //op = CALL
                 ID_jmpl_instr = 0;
                 ID_Read_Write = 1'bX; //eliminate dont care //leer //no modificar registros
-                ID_SE_dm = 1'bX;
+                ID_ALU_op3 = 4'b0000;
+                ID_SE_dm = 1'b0;
                 ID_load_instr = 0;
                 ID_RF_enable = 1; //Write in R15 PC
-                ID_size_dm = 2'bXX;
+                ID_size_dm = 2'b00;
                 ID_modifyCC = 0;
                 ID_Call_instr = 1;
                 ID_B_instr = 0;
-                ID_29_a = 1'bX;
-                ID_ALU_op3 = 6'bXXXXXX;
+                ID_29_a = 1'b0;
+                ID_DataMem_enable = 0;
             end
     
             2'b00:
@@ -31,6 +32,7 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
                 if (Instr == 32'b00000000000000000000000000000000) begin //check nop
                     ID_jmpl_instr = 0;
                     ID_Read_Write = 0;
+                    ID_ALU_op3 = 0000;
                     ID_SE_dm = 0;
                     ID_load_instr = 0;
                     ID_RF_enable = 0;
@@ -38,11 +40,12 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
                     ID_modifyCC = 0;
                     ID_Call_instr = 0;
                     ID_B_instr = 0;
-                    ID_29_a = Instr[29];
-                    ID_ALU_op3 = 000000;
+                    ID_29_a = 0;
+                    ID_DataMem_enable = 0;
                 end else begin //op = Branch
                     ID_jmpl_instr = 0;
                     ID_Read_Write = 0;
+                    ID_ALU_op3 = 0000;
                     ID_SE_dm = 0;
                     ID_load_instr = 0;
                     ID_RF_enable = 0;
@@ -51,7 +54,7 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
                     ID_Call_instr = 0;
                     ID_B_instr = 1;
                     ID_29_a = Instr[29];
-                    ID_ALU_op3 = 000000;
+                    ID_DataMem_enable = 0;
                 end
             end
 
@@ -68,15 +71,17 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
                     ID_jmpl_instr = 0;
                 end
 
-                ID_Read_Write = 1'bX;
-                ID_SE_dm = 1'bX;
+                ID_Read_Write = 1'b0;
+                ID_SE_dm = 1'b0;
+                ID_ALU_op3 = 0000; //change to 4bits
                 ID_load_instr = 0;
                 ID_RF_enable = 1;
-                ID_size_dm = 2'bXX;
+                ID_size_dm = 2'b00;
                 ID_Call_instr = 0;
                 ID_B_instr = 0;
-                ID_29_a = 1'bX;
-                ID_ALU_op3 = Instr[24:19]; //change to 4bits
+                ID_29_a = 1'b0;
+                ID_DataMem_enable = 0;
+                //ID_ALU_op3 = Instr[24:19]; //change to 4bits
                 //identify op3(6bits) and decodify op3(4bits) for our ALU
             end
 
@@ -150,11 +155,12 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
                 end
                 endcase
                 ID_jmpl_instr = 0;
+                ID_ALU_op3 = 0000;
                 ID_modifyCC = 0;
                 ID_Call_instr = 0;
                 ID_B_instr = 0;
-                ID_29_a = 1'bX;
-                ID_ALU_op3 =Instr[24:19];
+                ID_29_a = 1'b0;
+                ID_DataMem_enable = 1;
             end
 
             endcase
@@ -165,42 +171,22 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
 
 endmodule
 
-module MuxControlSignal(ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_size_dm_out, ID_modifyCC_out, ID_Call_instr_out, ID_ALU_op3_out, S, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_ALU_op3);
+module MuxControlSignal(ControlSignals_Out, S, ControlSignals_In);
     input S;
-    input ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr;
-    input [1:0] ID_size_dm; 
-    input [5:0] ID_ALU_op3;
-    output reg ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_load_instr_out, ID_RF_enable_out, ID_modifyCC_out, ID_Call_instr_out, ID_29_a_out;
-    output reg [1:0] ID_size_dm_out;
-    output reg [5:0] ID_ALU_op3_out;
+    input [13:0] ControlSignals_In;
+    output reg [13:0] ControlSignals_Out;
 
     always @(*) 
         begin
         case (S)
             1'b0: // Buffer
             begin
-                ID_jmpl_instr_out = ID_jmpl_instr;
-                ID_Read_Write_out = ID_Read_Write;
-                ID_SE_dm_out = ID_SE_dm;
-                ID_load_instr_out = ID_load_instr;
-                ID_RF_enable_out = ID_RF_enable;
-                ID_size_dm_out = ID_size_dm;
-                ID_modifyCC_out = ID_modifyCC;
-                ID_Call_instr_out = ID_Call_instr;
-                ID_ALU_op3_out = ID_ALU_op3;
+                ControlSignals_Out = ControlSignals_In;
             end
                 
             1'b1: //No Operation
             begin
-                ID_jmpl_instr_out = 1'b0;
-                ID_Read_Write_out = 1'b0;
-                ID_SE_dm_out = 1'b0;
-                ID_load_instr_out = 1'b0;
-                ID_RF_enable_out = 1'b0;
-                ID_size_dm_out = 2'b00;
-                ID_modifyCC_out = 1'b0;
-                ID_Call_instr_out = 1'b0;
-                ID_ALU_op3_out = 6'b000000;    
+                ControlSignals_Out = 14'b00000000000000;
             end
                 
         endcase
@@ -211,8 +197,8 @@ module MuxControlSignal(ID_jmpl_instr_out, ID_Read_Write_out, ID_SE_dm_out, ID_l
 endmodule
 
 module Sumador4(nPC, PC); 
-    input [7:0] PC;
-    output reg [7:0] nPC;
+    input [31:0] PC;
+    output reg [31:0] nPC;
     always @(PC) 
         begin
             nPC = PC + 4; //nPC = nPC +4
@@ -221,32 +207,32 @@ module Sumador4(nPC, PC);
 endmodule
 
 module nPC (Q, Clk, D, LE, R);
-    input [7:0] D;
+    input [31:0] D;
     input LE;
     input Clk;
     input R;
-    output reg [7:0] Q;
+    output reg[31:0] Q;
 
     always @(posedge Clk) //0 --> 1 en Clk: entra al if
-        if (R) Q <= 8'b0000100; //En el caso de nPC un reset produce un número binario correspondiente a un 4.
+        if (R) Q <= 32'b00000000000000000000000000000100; //En el caso de nPC un reset produce un número binario correspondiente a un 4.
         else if (LE) Q <= D; // LE = 1  D --> Q
 
 endmodule
 
 module PC (Q, Clk, D, LE, R);
-    input [7:0] D; //cambiar a 9bits
+    input [31:0] D;
     input LE;
     input Clk;
     input R;
-    output reg [7:0] Q;
+    output reg[31:0] Q;
 
     always @(posedge Clk) //0 --> 1 en Clk: entra al if
-        if (R) Q <= 8'b00000000; //un reset tienen el efecto de hacer cero todos los bits de salida del registro. 
+        if (R) Q <= 32'b00000000000000000000000000000000; //un reset tienen el efecto de hacer cero todos los bits de salida del registro. 
         else if (LE) Q <= D; // LE = 1  D --> Q
     
 endmodule
 
-module InstructionMemory (output reg [31:0] DataOut, input [7:0] Address);
+module InstructionMemory (output reg [31:0] DataOut, input [31:0] Address);
 
     reg [7:0] Mem [0:511];
     always @(Address) begin
@@ -257,8 +243,8 @@ module InstructionMemory (output reg [31:0] DataOut, input [7:0] Address);
 
 endmodule
 
-module PipelineRegister_IF_ID(Q, Clk, Instr, LE, R); //eliminar LE 
-    input [31:0] Instr;
+module PipelineRegister_IF_ID(Q, Clk, D, LE, R); //eliminar LE 
+    input [31:0] D;
     input LE;
     input Clk;
     input R;
@@ -267,74 +253,46 @@ module PipelineRegister_IF_ID(Q, Clk, Instr, LE, R); //eliminar LE
     always @(posedge Clk) //0 --> 1 en Clk: entra al if
     begin
         if (R) Q <= 32'b00000000000000000000000000000000; //un reset tienen el efecto de hacer cero todos los bits de salida del registro. 
-        else if (LE) Q <= Instr; // LE = 1  D --> Q //else
+        else if (LE) Q <= D; // LE = 1  D --> Q //else
     end
     
 endmodule
 
-module PipelineRegister_ID_EX(Q, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_call_instr, Clk, Instr, ID_jmpl_instr, ID_Read_Write, ID_ALU_op3, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_call_instr);
-    //add Reset to all PipelineRegisters
-    //NO enviar Instruccion, solamente control_signals
-    input [31:0] Instr;
+module PipelineRegister_ID_EX(Q, Clk, D, R);
+    //jpmpl(1) + read_write(1) + ALU_op3(4) + SE(1) + load_instr(1) + RF_enable(1) + size_dm(2) + modifyCC(1) + call(1) + DataMem_enable(1) = 14 bits
+    input [13:0] D;
     input Clk;
-    input ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable , ID_modifyCC, ID_call_instr;
-    input [1:0] ID_size_dm;
-    input [5:0] ID_ALU_op3;
-    output reg EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable , EX_modifyCC, EX_call_instr;
-    output reg [1:0] EX_size_dm;
-    output reg [5:0] EX_ALU_op3;
-    output reg [31:0] Q; //concatenacion de todas senales;
+    input R;
+    output reg [13:0] Q;
 
-    always @(posedge Clk) //0 --> 1 en Clk: entra al if
-    begin
-        Q <= Instr; //Output <= Input
-        EX_jmpl_instr <= ID_jmpl_instr;
-        EX_Read_Write <= ID_Read_Write;
-        EX_ALU_op3 <= ID_ALU_op3; 
-        EX_SE_dm <= ID_SE_dm; 
-        EX_load_instr <= ID_load_instr; 
-        EX_RF_enable <= ID_RF_enable; 
-        EX_size_dm <= ID_size_dm; 
-        EX_modifyCC <= ID_modifyCC;
-        EX_call_instr <= ID_call_instr;
+    always @(posedge Clk) begin
+        if (R) Q <= 14'b00000000000000;
+        else Q <= D;
     end
-    
 endmodule
 
-module PipelineRegister_EX_MEM(Q, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_call_instr, Clk, Instr, EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_call_instr);
-    input [31:0] Instr;
+module PipelineRegister_EX_MEM(Q, Clk, D, R);
+    //jpmpl(1) + read_write(1) + SE(1) + load_instr(1) + RF_enable(1) + size_dm(2) + call(1) + DataMem_enable(1) = 9 bits
+    input [8:0] D;
     input Clk;
-    input EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_call_instr;
-    input [1:0] EX_size_dm;
-    output reg MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_call_instr;
-    output reg [1:0] MEM_size_dm;
-    output reg [31:0] Q;
+    input R;
+    output reg [8:0] Q;
 
-    always @(posedge Clk) //0 --> 1 en Clk: entra al if
-    begin
-        Q <= Instr; //Output <= Input
-        MEM_jmpl_instr <= EX_jmpl_instr;
-        MEM_Read_Write <= EX_Read_Write;
-        MEM_SE_dm <= EX_SE_dm; 
-        MEM_load_instr <= EX_load_instr; 
-        MEM_RF_enable <= EX_RF_enable; 
-        MEM_size_dm <= EX_size_dm;
-        MEM_call_instr <= EX_call_instr;
+    always @(posedge Clk) begin
+        if (R) Q <= 9'b000000000;
+        else Q <= D;
     end
-    
 endmodule
 
-module PipelineRegister_MEM_WB(Q, WB_RF_enable, Clk, Instr, MEM_RF_enable);
-    input [31:0] Instr;
+module PipelineRegister_MEM_WB(Q, Clk, D, R);
+    //RF_enable(1) =  1 bit
+    input D;
     input Clk;
-    input MEM_RF_enable;
-    output reg WB_RF_enable;
-    output reg [31:0] Q;
+    input R;
+    output reg Q;
 
-    always @(posedge Clk) //0 --> 1 en Clk: entra al if
-    begin
-        Q <= Instr; //Output <= Input
-        WB_RF_enable <= MEM_RF_enable; 
+    always @(posedge Clk) begin
+        if (R) Q <= 0;
+        else Q <= D;
     end
-    
 endmodule
