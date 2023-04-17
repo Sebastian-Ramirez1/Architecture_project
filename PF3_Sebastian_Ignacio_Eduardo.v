@@ -1,10 +1,13 @@
-module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_ALU_op3, ID_DataMem_enable, Instr);
+module ControlUnit(output_signals, Instr);
     input [31:0] Instr;
-    output reg ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_DataMem_enable;
-    output reg [1:0] ID_size_dm;
-    output reg [3:0] ID_ALU_op3; //should be 4bits for our ALU
+    output reg [15:0] output_signals;
+    
+    reg ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_DataMem_enable;
+    reg [1:0] ID_size_dm;
+    reg [3:0] ID_ALU_op3; //should be 4bits for our ALU
 
     wire [1:0] op = Instr[31:30];
+    wire [3:0] op3_last_4bits = Instr[22:19];
 
     always @(*) 
         begin
@@ -14,7 +17,7 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
             begin
                 //op = CALL
                 ID_jmpl_instr = 0;
-                ID_Read_Write = 1'bX; //eliminate dont care //leer //no modificar registros
+                ID_Read_Write = 1'b0; //eliminate dont care //leer //no modificar registros
                 ID_ALU_op3 = 4'b0000;
                 ID_SE_dm = 1'b0;
                 ID_load_instr = 0;
@@ -66,14 +69,48 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
                 if(Instr[24:19] == 6'b111000) begin //JMPL
                     ID_jmpl_instr = 1;
                     ID_modifyCC = 0;
-                end else if ( (Instr[24:19] == 6'b010000) || (Instr[24:19] == 6'b011000) || (Instr[24:19] == 6'b010100) || (Instr[24:19] == 6'b011100)) begin //can modify CC
+                    ID_ALU_op3 = 4'b0;
+                end else if (Instr[23] == 1) begin //can modify CC
                     ID_modifyCC = 1;
                     ID_jmpl_instr = 0;
+                end else begin
+                    ID_modifyCC = 0;
+                    ID_jmpl_instr = 0;
+                end
+                
+                if (Instr[24:19] != 6'b111000)
+                begin
+                    case (op3_last_4bits)
+                        4'd0: ID_ALU_op3 = 4'd0; // Add
+
+                        4'd8: ID_ALU_op3 = 4'd1; // Add + carry
+
+                        4'd4: ID_ALU_op3 = 4'd2; // Sub
+
+                        4'd12: ID_ALU_op3 = 4'd3; //Sub - Carry
+
+                        4'd1: ID_ALU_op3 = 4'd4; // And
+
+                        4'd5: ID_ALU_op3 = (Instr[24] == 1)? 4'd10 : 4'd8; // Logical Shift Left : AndNot
+
+                        4'd2: ID_ALU_op3 = 4'd5; // Or
+
+                        4'd6: ID_ALU_op3 = (Instr[24] == 1)? 4'd11 : 4'd9; // Logical Shift Right : OrNot
+
+                        4'd3: ID_ALU_op3 = 4'd6; // XOR
+
+                        4'd7: ID_ALU_op3 = (Instr[24] == 1)? 4'd12 : 4'd7; // Arithmetic Shift Right : XORNot
+
+                        // 4'd6: ID_ALU_op3 = 4'd13; // A
+
+                        // 4'd3: ID_ALU_op3 = 4'd14; // B
+
+                        // 4'd7: ID_ALU_op3 = 4'd15; // not B
+                    endcase
                 end
 
                 ID_Read_Write = 1'b0;
                 ID_SE_dm = 1'b0;
-                ID_ALU_op3 = 0000; //change to 4bits
                 ID_load_instr = 0;
                 ID_RF_enable = 1;
                 ID_size_dm = 2'b00;
@@ -133,7 +170,7 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
                 begin
                     ID_Read_Write = 1; //Store = 1
                     ID_SE_dm = 1'bX; //Signed Extension
-                    ID_load_instr = 1; //Enable
+                    ID_load_instr = 0; //Enable
                     ID_RF_enable = 0; //Ubicar en Memoria solamente 
                     ID_size_dm = 00; //byte
                 end
@@ -141,7 +178,7 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
                 begin
                     ID_Read_Write = 1; //Store = 1
                     ID_SE_dm = 1'bX; //Signed Extension
-                    ID_load_instr = 1; //Enable
+                    ID_load_instr = 0; //Enable
                     ID_RF_enable = 0; //Ubicar en Memoria solamente 
                     ID_size_dm = 01; //halfword
                 end
@@ -149,7 +186,7 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
                 begin
                     ID_Read_Write = 1; //Store = 1
                     ID_SE_dm = 1'bX; //Signed Extension
-                    ID_load_instr = 1; //Enable
+                    ID_load_instr = 0; //Enable
                     ID_RF_enable = 0; //Ubicar en Memoria solamente 
                     ID_size_dm = 10; //Word
                 end
@@ -165,16 +202,15 @@ module ControlUnit(ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_
 
             endcase
         
+            output_signals = {ID_jmpl_instr, ID_Read_Write, ID_ALU_op3, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_DataMem_enable};
         end
-
-
 
 endmodule
 
 module MuxControlSignal(ControlSignals_Out, S, ControlSignals_In);
     input S;
-    input [13:0] ControlSignals_In;
-    output reg [13:0] ControlSignals_Out;
+    input [15:0] ControlSignals_In;
+    output reg [15:0] ControlSignals_Out;
 
     always @(*) 
         begin
@@ -186,14 +222,13 @@ module MuxControlSignal(ControlSignals_Out, S, ControlSignals_In);
                 
             1'b1: //No Operation
             begin
-                ControlSignals_Out = 14'b00000000000000;
+                ControlSignals_Out = 16'b0;
             end
                 
         endcase
 
         end
 
-    
 endmodule
 
 module Sumador4(nPC, PC); 
