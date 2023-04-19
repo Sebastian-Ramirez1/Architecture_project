@@ -45,7 +45,7 @@ module ControlUnit(output_signals, Instr);
                     ID_B_instr = 0;
                     ID_29_a = 0;
                     ID_DataMem_enable = 0;
-                end else begin //op = Branch
+                end else if(Instr[24:22] != 3'b100) begin //op = Branch
                     ID_jmpl_instr = 0;
                     ID_Read_Write = 0;
                     ID_ALU_op3 = 0000;
@@ -57,6 +57,19 @@ module ControlUnit(output_signals, Instr);
                     ID_Call_instr = 0;
                     ID_B_instr = 1;
                     ID_29_a = Instr[29];
+                    ID_DataMem_enable = 0;
+                end else begin //SETHI
+                    ID_jmpl_instr = 0;
+                    ID_Read_Write = 0;
+                    ID_ALU_op3 = 4'b1110; // B
+                    ID_SE_dm = 0;
+                    ID_load_instr = 0;
+                    ID_RF_enable = 1;
+                    ID_size_dm = 00;
+                    ID_modifyCC = 0;
+                    ID_Call_instr = 0;
+                    ID_B_instr = 0;
+                    ID_29_a = 0;
                     ID_DataMem_enable = 0;
                 end
             end
@@ -145,7 +158,7 @@ module ControlUnit(output_signals, Instr);
                 6'b000000: //load word
                 begin
                     ID_Read_Write = 0; //Load = 0
-                    ID_SE_dm = 1'bX; //Signed Extension
+                    ID_SE_dm = 1'b0; //Signed Extension
                     ID_load_instr = 1; //Enable
                     ID_RF_enable = 1; //Ubicar en Rd un valor de memoria 
                     ID_size_dm = 10; //word
@@ -169,7 +182,7 @@ module ControlUnit(output_signals, Instr);
                 6'b000101: //store byte
                 begin
                     ID_Read_Write = 1; //Store = 1
-                    ID_SE_dm = 1'bX; //Signed Extension
+                    ID_SE_dm = 1'b0; //Signed Extension
                     ID_load_instr = 0; //Enable
                     ID_RF_enable = 0; //Ubicar en Memoria solamente 
                     ID_size_dm = 00; //byte
@@ -177,7 +190,7 @@ module ControlUnit(output_signals, Instr);
                 6'b000110: //store halfword
                 begin
                     ID_Read_Write = 1; //Store = 1
-                    ID_SE_dm = 1'bX; //Signed Extension
+                    ID_SE_dm = 1'b0; //Signed Extension
                     ID_load_instr = 0; //Enable
                     ID_RF_enable = 0; //Ubicar en Memoria solamente 
                     ID_size_dm = 01; //halfword
@@ -185,7 +198,7 @@ module ControlUnit(output_signals, Instr);
                 6'b000100: //store word
                 begin
                     ID_Read_Write = 1; //Store = 1
-                    ID_SE_dm = 1'bX; //Signed Extension
+                    ID_SE_dm = 1'b0; //Signed Extension
                     ID_load_instr = 0; //Enable
                     ID_RF_enable = 0; //Ubicar en Memoria solamente 
                     ID_size_dm = 10; //Word
