@@ -116,8 +116,6 @@ module ControlUnit(output_signals, Instr);
 
                         // 4'd6: ID_ALU_op3 = 4'd13; // A
 
-                        // 4'd3: ID_ALU_op3 = 4'd14; // B
-
                         // 4'd7: ID_ALU_op3 = 4'd15; // not B
                     endcase
                 end
