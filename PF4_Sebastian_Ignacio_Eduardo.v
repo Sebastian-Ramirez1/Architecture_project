@@ -265,6 +265,16 @@ module MUXPC (input [31:0] ALU_out, input [31:0] Branch_Target_Address, input [3
     	end
 endmodule
 
+module ProgramStatusRegister (input[3:0] Flags, input EX_modifyCC, output reg C, output reg [3:0] PSR_Out);
+  reg [31:0] PSR_data;
+  always @(Flags, Ex_modifyCC)
+    begin
+      PSR_data[23:20] = {Flags[3:2], Flags[0], Flags[1]}; // Almacena los Flags/CC from Alu en bits 23-20
+      PSR_Out = PSR_data[23:20];// La salida son los flags/cc del Alu
+      C = PSR_data[20]; // La salida es el bit 20 del PSR
+     end
+endmodule
+
 module MUXPCIFID_Reset_Handler (input BCH_Out, input EX_jmpl_instr, input ID_Call_instr, input ID_29_a, input ID_B_instr, output reg IFID_Reset_Signal, output reg [1:0] PCMUX_Signal);
    
   always @(EX_jmpl_instr,  ID_Call_instr, ID_B_instr, ID_29_a, BCH_Out)
@@ -300,6 +310,29 @@ module MUXPCIFID_Reset_Handler (input BCH_Out, input EX_jmpl_instr, input ID_Cal
     end
 endmodule
 
+module DISP22SE (input[21:0] Disp22, output reg [21:0] Disp22SE_Out);
+   
+  always @(Disp22)
+    begin
+      if (Disp22[21] == 1) // si el bit mas significativo es 1 todo lo demas es 1
+        Disp22_Out = {22'b1111111111111111111111};
+        else 
+          Disp22_Out = {22'b0000000000000000000000}; // sino extiende 0
+     end
+    
+endmodule
+
+module MUXCALLORBRANCH (input[21:0] Disp22SE_Out, input[29:0] Disp30, input ID_Call_instr, output reg [31:0] MUXCOB_Out);
+   
+  always @(Disp22SE_Out, Disp30, ID_Call_instr)
+    begin
+      if (ID_Call_instr == 1)
+        MUXCOB_Out = Disp30;
+        else 
+          MUXCOB_Out = Disp22SE_Out;
+     end
+    
+endmodule
 module Sumador4(nPC, PC); 
     input [31:0] PC;
     output reg [31:0] nPC;
