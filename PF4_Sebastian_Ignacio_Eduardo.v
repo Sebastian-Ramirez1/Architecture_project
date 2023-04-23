@@ -291,19 +291,6 @@ module MUXCC (output reg [3:0] MUXCC_Out, input[3:0] PSR_Out, input[3:0] Flags, 
     
 endmodule
 
-module ConditionHandlerBranch (output reg BCH_Out, input[3:0] MUXCC_Out, input[3:0] InstrCondIF, input ID_B_instr);
-  
-  always @(MUXCC_Out, InstrCondIF, ID_B_instr)
-    begin
-      if (ID_B_instr == 1  && (InstrCondIF == 1000 || InstrCondIF == 0000 || (InstrCondIF == 1001 && MUXCC_Out[2] != 1 ) ||(InstrCondIF == 0001 && MUXCC_Out[2] == 1)|| (InstrCondIF == 1010 && (MUXCC_Out[2] == 0 ||( MUXCC_Out[1] == 0 && MUXCC_Out[3] == 0)|| (MUXCC_Out[1]) == 1 && MUXCC_Out[3] == 1))|| (InstrCondIF == 0010 && (MUXCC_Out[2] ==1 || ((MUXCC_Out[3] == 1 && MUXCC_Out[1] == 0) || MUXCC_Out[1] == 1 && MUXCC_Out[3] == 0) || (InstrCondIF == 1011 && ((MUXCC_Out[3]) == 1 && MUXCC_Out[1] == 1)))) || (MUXCC_Out[3] == 0 && MUXCC_Out[1] == 0) || (InstrCondIF == 0011 && ((MUXCC_Out[3] == 0 && MUXCC_Out[1] == 1) || (MUXCC_Out[3] == 1 && MUXCC_Out[1] == 0))) || (InstrCondIF == 1100 && (MUXCC_Out[2] != 1 || MUXCC_Out[0] != 1)) || (InstrCondIF == 0100 && (MUXCC_Out[0] == 1 || MUXCC_Out[2] == 1)) ||(InstrCondIF == 1101 && MUXCC_Out[0] != 1) ||(InstrCondIF == 0101 && MUXCC_Out[0] == 1) ||(InstrCondIF == 1110 && MUXCC_Out[3] != 1) ||(InstrCondIF == 0110 && MUXCC_Out[3] == 1) || (InstrCondIF == 1111 && MUXCC_Out[1] != 1) ||(InstrCondIF == 0111 && MUXCC_Out[1] == 1)))
-       BCH_Out = 1;
-        else 
-          BCH_Out =0;
-     end
-    
-endmodule
-
-
 module MUXPCIFID_Reset_Handler (output reg IFID_Reset_Signal, output reg [1:0] PCMUX_Signal, input BCH_Out, input EX_jmpl_instr, input ID_Call_instr, input ID_29_a, input ID_B_instr output reg IFID_Reset_Signal, output reg [1:0] PCMUX_Signal);
    
   always @(EX_jmpl_instr,  ID_Call_instr, ID_B_instr, ID_29_a, BCH_Out)
@@ -493,57 +480,86 @@ end
 endmodule
 
 module PipelineRegister_IF_ID(Q, Clk, D, LE, R); //eliminar LE 
-    input [31:0] D;
+    //PC = 32 bits
+    //Instr = 32 bits
+    input [63:0] D;
     input LE;
     input Clk;
     input R;
-    output reg [31:0] Q;
+    output reg [63:0] Q;
 
     always @(posedge Clk) //0 --> 1 en Clk: entra al if
     begin
-        if (R) Q <= 32'b00000000000000000000000000000000; //un reset tienen el efecto de hacer cero todos los bits de salida del registro. 
+        if (R) Q <= 64'b00000000000000000000000000000000; //un reset tienen el efecto de hacer cero todos los bits de salida del registro. 
         else if (LE) Q <= D; // LE = 1  D --> Q //else
     end
-    
 endmodule
 
 module PipelineRegister_ID_EX(Q, Clk, D, R);
     //jpmpl(1) + read_write(1) + ALU_op3(4) + SE(1) + load_instr(1) + RF_enable(1) + size_dm(2) + modifyCC(1) + call(1) + DataMem_enable(1) = 14 bits
-    input [13:0] D;
+    //ID_PC = 32 bits
+    //ID_PA = 32 bits
+    //ID_DataIn = 32 bits
+    //ID_PB = 32bits
+    //ID_Imm = 22bits
+    //ID_RD = 5 bits
+    //ID_31_30_24_13 = 4bits = 173 bits
+    input [172:0] D;
     input Clk;
     input R;
-    output reg [13:0] Q;
+    output reg [172:0] Q;
 
     always @(posedge Clk) begin
-        if (R) Q <= 14'b00000000000000;
+        if (R) Q <= 173'b00000000000000;
         else Q <= D;
     end
 endmodule
 
 module PipelineRegister_EX_MEM(Q, Clk, D, R);
     //jpmpl(1) + read_write(1) + SE(1) + load_instr(1) + RF_enable(1) + size_dm(2) + call(1) + DataMem_enable(1) = 9 bits
-    input [8:0] D;
+    //EX_PC = 32 bits
+    //EX_DataIn = 32 bits
+    //EX_ALU_Out = 32 bits
+    //EX_RD = 5bits
+    input [109:0] D;
     input Clk;
     input R;
-    output reg [8:0] Q;
+    output reg [109:0] Q;
 
     always @(posedge Clk) begin
-        if (R) Q <= 9'b000000000;
+        if (R) Q <= 110'b0;
         else Q <= D;
     end
 endmodule
 
 module PipelineRegister_MEM_WB(Q, Clk, D, R);
     //RF_enable(1) =  1 bit
-    input D;
+    //PW = 32 bits
+    //RW = 5 bits
+    input [37:0] D;
     input Clk;
     input R;
-    output reg Q;
+    output reg [37:0] Q;
 
     always @(posedge Clk) begin
-        if (R) Q <= 0;
+        if (R) Q <= 37'b0;
         else Q <= D;
     end
+endmodule
+
+module MEM_MUX_RF (Data_Out, PC, ALU_Out, Load_Data, MEM_load_instr, MEM_jmpl_instr, MEM_call_instr);
+    input MEM_call_instr, MEM_jmpl_instr, MEM_load_instr;
+    input [31:0] PC;
+    input [31:0] ALU_Out;
+    input [31:0] Load_Data;
+    output reg [31:0] Data_Out;
+
+    always @(*) begin
+        if (MEM_call_instr) Data_Out = PC;
+        else if (MEM_jmpl_instr) Data_Out = ALU_Out;
+        else if (MEM_load_instr) Data_Out = Load_Data;
+    end
+    
 endmodule
 
 module RegisterFile(PA, PB, PC, RA, RB, RC, RW, PW, Clk, LE);
