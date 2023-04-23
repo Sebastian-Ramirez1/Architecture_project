@@ -380,7 +380,7 @@ module InstructionMemory (output reg [31:0] DataOut, input [31:0] Address);
 
 endmodule
 
-module DataMemory(output reg[31:0] DataOut, input[1:0] RW, input[31:0] Address, input[31:0] DataIn, input [1:0] Size, input [1:0] SE, input [1:0] E);
+module DataMemory(output reg[31:0] DataOut, input RW, input[31:0] Address, input[31:0] DataIn, input [1:0] Size, input SE, input E);
 
   reg[7:0] Mem[0:511];
   reg[7:0] address;
@@ -517,6 +517,21 @@ module PipelineRegister_MEM_WB(Q, Clk, D, R);
         if (R) Q <= 37'b0;
         else Q <= D;
     end
+endmodule
+
+module MEM_MUX_RF (Data_Out, PC, ALU_Out, Load_Data, MEM_load_instr, MEM_jmpl_instr, MEM_call_instr);
+    input MEM_call_instr, MEM_jmpl_instr, MEM_load_instr;
+    input [31:0] PC;
+    input [31:0] ALU_Out;
+    input [31:0] Load_Data;
+    output reg [31:0] Data_Out;
+
+    always @(*) begin
+        if (MEM_call_instr) Data_Out = PC;
+        else if (MEM_jmpl_instr) Data_Out = ALU_Out;
+        else if (MEM_load_instr) Data_Out = Load_Data;
+    end
+    
 endmodule
 
 module RegisterFile(PA, PB, PC, RA, RB, RC, RW, PW, Clk, LE);

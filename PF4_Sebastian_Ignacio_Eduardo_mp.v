@@ -64,6 +64,7 @@ module PF4ModuloPrueba;
     wire [31:0] MEM_DataIn;
     wire [31:0] MEM_ALU_Out;
     wire [4:0] MEM_RD;
+    wire [31:0] MEM_Load_Data;
 
     //Input Signals MEM_WB
     wire [37:0] MEM_WB_in;
@@ -106,6 +107,10 @@ module PF4ModuloPrueba;
     //Q, D, Clk, R ||
 
     PipelineRegister_EX_MEM PipelineRegister_EX_MEM(EX_MEM_out, Clk, EX_MEM_in, R);
+
+    //MEM
+    DataMemory DataMemory(MEM_Load_Data, MEM_Read_Write, MEM_ALU_Out, MEM_DataIn, MEM_size_dm, MEM_SE_dm, MEM_DataMem_enable); //DataMemory
+    MEM_MUX_RF MEM_MUX_RF (MEM_PW, MEM_PC, MEM_ALU_Out, MEM_Load_Data, MEM_load_instr, MEM_jmpl_instr, MEM_call_instr); //MUX MEM
 
     PipelineRegister_MEM_WB PipelineRegister_MEM_WB(MEM_WB_out, Clk, MEM_WB_in, R);
 
