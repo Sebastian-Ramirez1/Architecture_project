@@ -241,7 +241,7 @@ module MuxControlSignal(ControlSignals_Out, S, ControlSignals_In);
         end
 
 endmodule
-module MUXPC (input [31:0] ALU_out, input [31:0] Branch_Target_Address, input [31:0]NPC_Out, input [1:0] IF_Signal_In, output reg [31:0] MUXPC_Out);
+module MUXPC (output reg [31:0] MUXPC_Out, input [31:0] ALU_out, input [31:0] Branch_Target_Address, input [31:0]NPC_Out, input [1:0] IF_Signal_In);
   always @(ALU_out, Branch_Target_Address, NPC_Out, IF_Signal_In)
     	begin
       	case (IF_Signal_In)
@@ -265,17 +265,46 @@ module MUXPC (input [31:0] ALU_out, input [31:0] Branch_Target_Address, input [3
     	end
 endmodule
 
-module ProgramStatusRegister (input[3:0] Flags, input EX_modifyCC, output reg C, output reg [3:0] PSR_Out);
+module ProgramStatusRegister (output reg C, output reg [3:0] PSR_Out, input[3:0] Flags, input EX_modifyCC );
   reg [31:0] PSR_data;
-  always @(Flags, Ex_modifyCC)
+  always @(Flags, EX_modifyCC)
     begin
-      PSR_data[23:20] = {Flags[3:2], Flags[0], Flags[1]}; // Almacena los Flags/CC from Alu en bits 23-20
+      if (EX_modifyCC == 1)
+        begin
+          PSR_data[23:20] = {Flags[3:2], Flags[0], Flags[1]}; // Almacena los Flags/CC from Alu en bits 23-20
       PSR_Out = PSR_data[23:20];// La salida son los flags/cc del Alu
       C = PSR_data[20]; // La salida es el bit 20 del PSR
+        end
      end
+    
 endmodule
 
-module MUXPCIFID_Reset_Handler (input BCH_Out, input EX_jmpl_instr, input ID_Call_instr, input ID_29_a, input ID_B_instr, output reg IFID_Reset_Signal, output reg [1:0] PCMUX_Signal);
+module MUXCC (output reg [3:0] MUXCC_Out, input[3:0] PSR_Out, input[3:0] Flags, input EX_modifyCC);
+   
+  always @(PSR_Out, Flags, EX_modifyCC)
+    begin
+      if (EX_modifyCC == 0) // Si la instrucion no es capaz de modificar CC se utiliza los flags del PSR
+        MUXCC_Out = PSR_Out;
+        else 
+          MUXCC_Out = Flags; // Si es capaz se utiliza los flags de la instrucion en ejecucion
+     end
+    
+endmodule
+
+module ConditionHandlerBranch (output reg BCH_Out, input[3:0] MUXCC_Out, input[3:0] InstrCondIF, input ID_B_instr);
+  
+  always @(MUXCC_Out, InstrCondIF, ID_B_instr)
+    begin
+      if (ID_B_instr == 1  && (InstrCondIF == 1000 || InstrCondIF == 0000 || (InstrCondIF == 1001 && MUXCC_Out[2] != 1 ) ||(InstrCondIF == 0001 && MUXCC_Out[2] == 1)|| (InstrCondIF == 1010 && (MUXCC_Out[2] == 0 ||( MUXCC_Out[1] == 0 && MUXCC_Out[3] == 0)|| (MUXCC_Out[1]) == 1 && MUXCC_Out[3] == 1))|| (InstrCondIF == 0010 && (MUXCC_Out[2] ==1 || ((MUXCC_Out[3] == 1 && MUXCC_Out[1] == 0) || MUXCC_Out[1] == 1 && MUXCC_Out[3] == 0) || (InstrCondIF == 1011 && ((MUXCC_Out[3]) == 1 && MUXCC_Out[1] == 1)))) || (MUXCC_Out[3] == 0 && MUXCC_Out[1] == 0) || (InstrCondIF == 0011 && ((MUXCC_Out[3] == 0 && MUXCC_Out[1] == 1) || (MUXCC_Out[3] == 1 && MUXCC_Out[1] == 0))) || (InstrCondIF == 1100 && (MUXCC_Out[2] != 1 || MUXCC_Out[0] != 1)) || (InstrCondIF == 0100 && (MUXCC_Out[0] == 1 || MUXCC_Out[2] == 1)) ||(InstrCondIF == 1101 && MUXCC_Out[0] != 1) ||(InstrCondIF == 0101 && MUXCC_Out[0] == 1) ||(InstrCondIF == 1110 && MUXCC_Out[3] != 1) ||(InstrCondIF == 0110 && MUXCC_Out[3] == 1) || (InstrCondIF == 1111 && MUXCC_Out[1] != 1) ||(InstrCondIF == 0111 && MUXCC_Out[1] == 1)))
+       BCH_Out = 1;
+        else 
+          BCH_Out =0;
+     end
+    
+endmodule
+
+
+module MUXPCIFID_Reset_Handler (output reg IFID_Reset_Signal, output reg [1:0] PCMUX_Signal, input BCH_Out, input EX_jmpl_instr, input ID_Call_instr, input ID_29_a, input ID_B_instr output reg IFID_Reset_Signal, output reg [1:0] PCMUX_Signal);
    
   always @(EX_jmpl_instr,  ID_Call_instr, ID_B_instr, ID_29_a, BCH_Out)
     begin
@@ -310,19 +339,31 @@ module MUXPCIFID_Reset_Handler (input BCH_Out, input EX_jmpl_instr, input ID_Cal
     end
 endmodule
 
-module DISP22SE (input[21:0] Disp22, output reg [21:0] Disp22SE_Out);
-   
-  always @(Disp22)
+module ConditionHandlerBranch (output reg BCH_Out, input[3:0] MUXCC_Out, input[3:0] InstrCondIF, input ID_B_instr);
+  
+  always @(MUXCC_Out, InstrCondIF, ID_B_instr)
     begin
-      if (Disp22[21] == 1) // si el bit mas significativo es 1 todo lo demas es 1
-        Disp22_Out = {22'b1111111111111111111111};
+      if (ID_B_instr == 1  && (InstrCondIF == 1000 || InstrCondIF == 0000 || (InstrCondIF == 1001 && Flags[3] != 1 ) ||(InstrCondIF == 0001 && Flags[3] == 1)|| (InstrCondIF == 1010 && (Flags[3] == 0 ||( Flags[1] == 0 && Flags[2] == 0)|| (Flags[1]) == 1 && Flags[2] == 1))||InstrCondIF == 0010 ||InstrCondIF == 1011 ||InstrCondIF == 0011 ||InstrCondIF == 1100 ||InstrCondIF == 0100 ||InstrCondIF == 1101 ||InstrCondIF == 0101 ||InstrCondIF == 1110 ||InstrCondIF == 0110 ||InstrCondIF == 1111 ||InstrCondIF == 0111))
+       BCH_Out == 1;
         else 
-          Disp22_Out = {22'b0000000000000000000000}; // sino extiende 0
+          BCH_Out ==0;
      end
     
 endmodule
 
-module MUXCALLORBRANCH (input[21:0] Disp22SE_Out, input[29:0] Disp30, input ID_Call_instr, output reg [31:0] MUXCOB_Out);
+module DISP22SE (output reg [21:0] Disp22SE_Out, input[21:0] Disp22);
+   
+  always @(Disp22)
+    begin
+      if (Disp22[21] == 1) // si el bit mas significativo es 1 todo lo demas es 1
+        Disp22SE_Out = {22'b1111111111111111111111};
+        else 
+          Disp22SE_Out = {22'b0000000000000000000000}; // sino extiende 0
+     end
+    
+endmodule
+
+module MUXCALLORBRANCH (output reg [31:0] MUXCOB_Out, input[21:0] Disp22SE_Out, input[29:0] Disp30, input ID_Call_instr);
    
   always @(Disp22SE_Out, Disp30, ID_Call_instr)
     begin
@@ -503,4 +544,171 @@ module PipelineRegister_MEM_WB(Q, Clk, D, R);
         if (R) Q <= 0;
         else Q <= D;
     end
+endmodule
+
+module RegisterFile(PA, PB, PC, RA, RB, RC, RW, PW, Clk, LE);
+    input [4:0] RA, RB, RC, RW;
+    input [31:0] PW;
+    input Clk;
+    input LE;
+    output [31:0] PA, PB, PC;
+
+    //salidas de registros
+    wire [31:0] Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, Q10, Q11, Q12, Q13, Q14, Q15, Q16, Q17, Q18, Q19, Q20, Q21, Q22, Q23, Q24, Q25, Q26, Q27, Q28, Q29, Q30, Q31;
+    wire [31:0] O; //salida binary decoder
+
+    assign Q0 = 32'b00000000000000000000000000000000; //R0
+
+    //5-to-32 Binary Decoder
+    binaryDecoder binaryDecoder(O, RW, LE);
+
+    //32 32-Bit Registers
+    //register32 R0(Clk, 0, Q0, O[0]); //R0 siempre tendra valor de cero. Is R0 
+    register32 R1(Clk, PW, Q1, O[1]);
+    register32 R2(Clk, PW, Q2, O[2]);
+    register32 R3(Clk, PW, Q3, O[3]);
+    register32 R4(Clk, PW, Q4, O[4]);
+    register32 R5(Clk, PW, Q5, O[5]);
+    register32 R6(Clk, PW, Q6, O[6]);
+    register32 R7(Clk, PW, Q7, O[7]);
+    register32 R8(Clk, PW, Q8, O[8]);
+    register32 R9(Clk, PW, Q9, O[9]);
+    register32 R10(Clk, PW, Q10, O[10]);
+    register32 R11(Clk, PW, Q11, O[11]);
+    register32 R12(Clk, PW, Q12, O[12]);
+    register32 R13(Clk, PW, Q13, O[13]);
+    register32 R14(Clk, PW, Q14, O[14]);
+    register32 R15(Clk, PW, Q15, O[15]);
+    register32 R16(Clk, PW, Q16, O[16]);
+    register32 R17(Clk, PW, Q17, O[17]);
+    register32 R18(Clk, PW, Q18, O[18]);
+    register32 R19(Clk, PW, Q19, O[19]);
+    register32 R20(Clk, PW, Q20, O[20]);
+    register32 R21(Clk, PW, Q21, O[21]);
+    register32 R22(Clk, PW, Q22, O[22]);
+    register32 R23(Clk, PW, Q23, O[23]);
+    register32 R24(Clk, PW, Q24, O[24]);
+    register32 R25(Clk, PW, Q25, O[25]);
+    register32 R26(Clk, PW, Q26, O[26]);
+    register32 R27(Clk, PW, Q27, O[27]);
+    register32 R28(Clk, PW, Q28, O[28]);
+    register32 R29(Clk, PW, Q29, O[29]);
+    register32 R30(Clk, PW, Q30, O[30]);
+    register32 R31(Clk, PW, Q31, O[31]);
+    
+    //3 32-to-1 Multiplexers
+    //output primero
+    Mux32x1 MuxA(RA, Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, Q10, Q11, Q12, Q13, Q14, Q15, Q16, Q17, Q18, Q19, Q20, Q21, Q22, Q23, Q24, Q25, Q26, Q27, Q28, Q29, Q30, Q31, PA);
+    Mux32x1 MuxB(RB, Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, Q10, Q11, Q12, Q13, Q14, Q15, Q16, Q17, Q18, Q19, Q20, Q21, Q22, Q23, Q24, Q25, Q26, Q27, Q28, Q29, Q30, Q31, PB);
+    Mux32x1 MuxC(RC, Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, Q10, Q11, Q12, Q13, Q14, Q15, Q16, Q17, Q18, Q19, Q20, Q21, Q22, Q23, Q24, Q25, Q26, Q27, Q28, Q29, Q30, Q31, PC);
+
+
+endmodule
+
+module register32(Clk, D, Q, LE); //Reset?
+    input [31:0] D;
+    input LE;
+    input Clk;
+    input Clr;
+    output reg [31:0] Q;
+
+    always @(posedge Clk) //0 --> 1 en Clk: entra al if
+        begin
+            if (LE) Q <= D; // LE = 1  D --> Q
+        end
+        
+
+endmodule
+
+module Mux32x1(S, I0, I1, I2, I3, I4, I5, I6, I7, I8, I9, I10, I11, I12, I13, I14, I15, I16, I17, I18, I19, I20, I21, I22, I23, I24, I25, I26, I27, I28, I29, I30, I31, P);
+    input [31:0] I0, I1, I2, I3, I4, I5, I6, I7, I8, I9, I10, I11, I12, I13, I14, I15, I16, I17, I18, I19, I20, I21, I22, I23, I24, I25, I26, I27, I28, I29, I30, I31;
+    input [4:0] S;
+    output reg [31:0] P;
+
+    always @(S, I0, I1, I2, I3, I4, I5, I6, I7, I8, I9, I10, I11, I12, I13, I14, I15, I16, I17, I18, I19, I20, I21, I22, I23, I24, I25, I26, I27, I28, I29, I30, I31) 
+        begin
+        case (S)
+        5'b00000: P = I0;
+        5'b00001: P = I1;
+        5'b00010: P = I2;
+        5'b00011: P = I3;
+        5'b00100: P = I4;
+        5'b00101: P = I5;
+        5'b00110: P = I6;
+        5'b00111: P = I7;
+        5'b01000: P = I8;
+        5'b01001: P = I9;
+        5'b01010: P = I10;
+        5'b01011: P = I11;
+        5'b01100: P = I12;
+        5'b01101: P = I13;
+        5'b01110: P = I14;
+        5'b01111: P = I15;
+        5'b10000: P = I16;
+        5'b10001: P = I17;
+        5'b10010: P = I18;
+        5'b10011: P = I19;
+        5'b10100: P = I20;
+        5'b10101: P = I21;
+        5'b10110: P = I22;
+        5'b10111: P = I23;
+        5'b11000: P = I24;
+        5'b11001: P = I25;
+        5'b11010: P = I26;
+        5'b11011: P = I27;
+        5'b11100: P = I28;
+        5'b11101: P = I29; 
+        5'b11110: P = I30;
+        5'b11111: P = I31;
+        endcase
+
+        end
+endmodule
+
+module binaryDecoder(O, RW, LE);
+    output reg [31:0] O;
+    input [4:0] RW;
+    input LE;
+
+    always @(RW, LE)  
+
+        if(LE)
+        begin
+            case(RW)
+            5'b00000: O = 32'b00000000000000000000000000000001;
+            5'b00001: O = 32'b00000000000000000000000000000010;
+            5'b00010: O = 32'b00000000000000000000000000000100;
+            5'b00011: O = 32'b00000000000000000000000000001000;
+            5'b00100: O = 32'b00000000000000000000000000010000;
+            5'b00101: O = 32'b00000000000000000000000000100000;
+            5'b00110: O = 32'b00000000000000000000000001000000;
+            5'b00111: O = 32'b00000000000000000000000010000000;
+            5'b01000: O = 32'b00000000000000000000000100000000;
+            5'b01001: O = 32'b00000000000000000000001000000000;
+            5'b01010: O = 32'b00000000000000000000010000000000;
+            5'b01011: O = 32'b00000000000000000000100000000000;
+            5'b01100: O = 32'b00000000000000000001000000000000;
+            5'b01101: O = 32'b00000000000000000010000000000000;
+            5'b01110: O = 32'b00000000000000000100000000000000;
+            5'b01111: O = 32'b00000000000000001000000000000000;
+            5'b10000: O = 32'b00000000000000010000000000000000;
+            5'b10001: O = 32'b00000000000000100000000000000000;
+            5'b10010: O = 32'b00000000000001000000000000000000;
+            5'b10011: O = 32'b00000000000010000000000000000000;
+            5'b10100: O = 32'b00000000000100000000000000000000;
+            5'b10101: O = 32'b00000000001000000000000000000000;
+            5'b10110: O = 32'b00000000010000000000000000000000;
+            5'b10111: O = 32'b00000000100000000000000000000000;
+            5'b11000: O = 32'b00000001000000000000000000000000;
+            5'b11001: O = 32'b00000010000000000000000000000000;
+            5'b11010: O = 32'b00000100000000000000000000000000;
+            5'b11011: O = 32'b00001000000000000000000000000000;
+            5'b11100: O = 32'b00010000000000000000000000000000;
+            5'b11101: O = 32'b00100000000000000000000000000000;
+            5'b11110: O = 32'b01000000000000000000000000000000;
+            5'b11111: O = 32'b10000000000000000000000000000000;
+            endcase
+        end
+        else  O = 32'b00000000000000000000000000000000;
+
 endmodule
