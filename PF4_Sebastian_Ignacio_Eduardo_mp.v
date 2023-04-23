@@ -17,27 +17,65 @@ module PF4ModuloPrueba;
     
     wire [15:0] Mux_out;
 
-    wire [13:0] ID_EX_in = {Mux_out[15:3], Mux_out[0]};
-    assign {ID_jmpl_instr, ID_Read_Write, ID_ALU_op3, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_DataMem_enable} = ID_EX_in;
+    //Input Signals for Pipeline_IF_ID
+    wire [63:0] IF_ID_in = {InstructionMemory_Out ,PC_Out};
+    wire [63:0] IF_ID_out = {Instruction_ControlUnit, ID_PC};
+
+    //Input Signals for Pipeline_ID_EX
+    wire [172:0] ID_EX_in = {Mux_out[15:3], Mux_out[0]};
+    assign {ID_PC, ID_DataIn, ID_PA, ID_PB, ID_RD_MUX, ID_31_30_24_13, ID_Imm, ID_jmpl_instr, ID_Read_Write, ID_ALU_op3, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_DataMem_enable} = ID_EX_in;
     assign ID_B_instr = Mux_out[2];
     assign ID_29_a = Mux_out[1];
-    //Output Control Signals for PipelineRegister_ID_EX
+    wire [31:0] ID_PC; 
+    wire [31:0] ID_DataIn; 
+    wire [31:0] ID_PA; 
+    wire [31:0] ID_PB; 
+    wire [21:0] ID_Imm = {Instruction_ControlUnit[21:0]};
+    wire [3:0] ID_31_30_24_13 = {Instruction_ControlUnit[31], Instruction_ControlUnit[30], Instruction_ControlUnit[24], Instruction_ControlUnit[13]};
+    wire [4:0] ID_RD = {Instruction_ControlUnit[29:25]};
+    wire [4:0] ID_RD_MUX;
+
+    //Output Signals for PipelineRegister_ID_EX
     wire EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_modifyCC, EX_Call_instr, EX_DataMem_enable;
     wire [1:0] EX_size_dm; 
     wire [3:0] EX_ALU_op3;
 
-    wire [13:0] ID_EX_out;
-    assign {EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_Call_instr, EX_DataMem_enable} = ID_EX_out;
-    wire [8:0] EX_MEM_in = {EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_Call_instr, EX_DataMem_enable};
-    //Output Control Signals for PipelineRegister_EX_MEM
+    wire [172:0] ID_EX_out;
+    assign {EX_PC, EX_DataIn, EX_PA, EX_PB, EX_RD, EX_31_30_24_13, EX_Imm, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_Call_instr, EX_DataMem_enable} = ID_EX_out;
+    wire [31:0] EX_PC; 
+    wire [31:0] EX_DataIn; 
+    wire [31:0] EX_PA; 
+    wire [31:0] EX_PB; 
+    wire [4:0] EX_RD; 
+    wire [3:0] EX_31_30_24_13;
+    wire [21:0] EX_Imm;
+
+    //Input signals EX_MEM
+    wire [109:0] EX_MEM_in = {EX_PC, EX_DataIn, EX_ALU_Out, EX_RD, EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_Call_instr, EX_DataMem_enable};
+    wire [31:0] EX_ALU_Out;
+
+    //Output Signals for PipelineRegister_EX_MEM
     wire MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_Call_instr, MEM_DataMem_enable;
     wire [1:0] MEM_size_dm;
+    wire [109:0] EX_MEM_out;
+    assign {MEM_PC, MEM_DataIn, MEM_ALU_Out, MEM_RD, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_Call_instr, MEM_DataMem_enable} = EX_MEM_out;
+    wire [31:0] Load_Data_Out;
+    wire [31:0] MEM_PC;
+    wire [31:0] MEM_DataIn;
+    wire [31:0] MEM_ALU_Out;
+    wire [4:0] MEM_RD;
 
-    wire [8:0] EX_MEM_out;
-    assign {MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_Call_instr, MEM_DataMem_enable} = EX_MEM_out;
-    wire MEM_WB_in = MEM_RF_enable;
-    //Output Control Signals for PipelineRegister_MEM_WB
+    //Input Signals MEM_WB
+    wire [37:0] MEM_WB_in;
+    assign {MEM_PW, MEM_RD, MEM_RF_enable} = MEM_WB_in;
+    wire [31:0] MEM_PW;
+    
+    //Output Signals for PipelineRegister_MEM_WB
+    wire [37:0] MEM_WB_out;
+    assign {WB_PW, WB_RD, WB_RF_enable} = MEM_WB_out;
     wire WB_RF_enable;
+    wire [31:0] WB_PW;
+    wire [4:0] WB_RD;
 
     wire [31:0] Instruction_ControlUnit; //Output_Pipeline_Register_IF_ID => Input_ControlUnit and Input_PipelineRegister_ID_EX
 
@@ -57,7 +95,7 @@ module PF4ModuloPrueba;
     
     InstructionMemory InstructionMemory(InstructionMemory_Out, PC_Out); //instancia de instruction memory
 
-    PipelineRegister_IF_ID PipelineRegister_IF_ID(Instruction_ControlUnit, Clk, InstructionMemory_Out, LE, R);
+    PipelineRegister_IF_ID PipelineRegister_IF_ID(IF_ID_out, Clk, IF_ID_in, LE, R);
 
     ControlUnit ControlUnit(Control_Unit_Out, Instruction_ControlUnit);
 
@@ -69,7 +107,7 @@ module PF4ModuloPrueba;
 
     PipelineRegister_EX_MEM PipelineRegister_EX_MEM(EX_MEM_out, Clk, EX_MEM_in, R);
 
-    PipelineRegister_MEM_WB PipelineRegister_MEM_WB(WB_RF_enable, Clk, MEM_WB_in, R);
+    PipelineRegister_MEM_WB PipelineRegister_MEM_WB(MEM_WB_out, Clk, MEM_WB_in, R);
 
     initial #56 $finish;
 
@@ -105,6 +143,7 @@ module PF4ModuloPrueba;
 
     initial begin
         $monitor("Instruccion: %b PC: %d nPC: %d Clk: %b  Reset: %b  LE: %b  S: %b  Time: %d \n ID_ALU_op3 %b ID_jmpl_instr: %b , ID_Read_Write: %b , ID_SE_dm: %b , ID_load_instr: %b , ID_RF_enable: %b , ID_size_dm: %b , ID_modifyCC: %b , ID_Call_instr: %b , ID_B_instr: %b , ID_29_a: %b , ID_DataMem_Enable: %b \n EX_jmpl_instr: %b, EX_ALU_op: %b , EX_Read_Write: %b, EX_SE_dm: %b , EX_load_instr: %b , EX_RF_enable: %b, EX_size_dm: %b , EX_modifyCC: %b , EX_call_instr: %b , EX_DataMem_enable: %b \n MEM_jmpl_instr: %b , MEM_Read_Write: %b , MEM_SE_dm: %b , MEM_load_instr: %b , MEM_RF_enable: %b , MEM_size_dm: %b , MEM_call_instr: %b , MEM_DataMem_enable: %b \n WB_RF_enable: %b\n", Instruction_ControlUnit, PC_Out, PC_In, Clk, R, LE, S, $time, ID_ALU_op3, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_DataMem_enable, EX_jmpl_instr, EX_ALU_op3, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_Call_instr, EX_DataMem_enable, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_Call_instr, MEM_DataMem_enable, WB_RF_enable);
+        //$monitor("PC: %d, MemoryAdress: %d, R1: %d, R3: %d, R5: %d, R8: %d, R10: %d, R11: %d, R12: %d, Time: %d", PC_Out, MEM_ALU_Out, RegisterFile.Q1, RegisterFile.Q3, RegisterFile.Q5, RegisterFile.Q8, RegisterFile.Q10, RegisterFile.Q11, RegisterFile.Q12, $time); //R3: %d, R5: %d, R8: %d, R10: %d, R11: %d, R12: %d
 
     end
     

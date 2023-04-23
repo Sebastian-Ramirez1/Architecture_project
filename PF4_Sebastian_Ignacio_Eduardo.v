@@ -452,55 +452,69 @@ end
 endmodule
 
 module PipelineRegister_IF_ID(Q, Clk, D, LE, R); //eliminar LE 
-    input [31:0] D;
+    //PC = 32 bits
+    //Instr = 32 bits
+    input [63:0] D;
     input LE;
     input Clk;
     input R;
-    output reg [31:0] Q;
+    output reg [63:0] Q;
 
     always @(posedge Clk) //0 --> 1 en Clk: entra al if
     begin
-        if (R) Q <= 32'b00000000000000000000000000000000; //un reset tienen el efecto de hacer cero todos los bits de salida del registro. 
+        if (R) Q <= 64'b00000000000000000000000000000000; //un reset tienen el efecto de hacer cero todos los bits de salida del registro. 
         else if (LE) Q <= D; // LE = 1  D --> Q //else
     end
-    
 endmodule
 
 module PipelineRegister_ID_EX(Q, Clk, D, R);
     //jpmpl(1) + read_write(1) + ALU_op3(4) + SE(1) + load_instr(1) + RF_enable(1) + size_dm(2) + modifyCC(1) + call(1) + DataMem_enable(1) = 14 bits
-    input [13:0] D;
+    //ID_PC = 32 bits
+    //ID_PA = 32 bits
+    //ID_DataIn = 32 bits
+    //ID_PB = 32bits
+    //ID_Imm = 22bits
+    //ID_RD = 5 bits
+    //ID_31_30_24_13 = 4bits = 173 bits
+    input [172:0] D;
     input Clk;
     input R;
-    output reg [13:0] Q;
+    output reg [172:0] Q;
 
     always @(posedge Clk) begin
-        if (R) Q <= 14'b00000000000000;
+        if (R) Q <= 173'b00000000000000;
         else Q <= D;
     end
 endmodule
 
 module PipelineRegister_EX_MEM(Q, Clk, D, R);
     //jpmpl(1) + read_write(1) + SE(1) + load_instr(1) + RF_enable(1) + size_dm(2) + call(1) + DataMem_enable(1) = 9 bits
-    input [8:0] D;
+    //EX_PC = 32 bits
+    //EX_DataIn = 32 bits
+    //EX_ALU_Out = 32 bits
+    //EX_RD = 5bits
+    input [109:0] D;
     input Clk;
     input R;
-    output reg [8:0] Q;
+    output reg [109:0] Q;
 
     always @(posedge Clk) begin
-        if (R) Q <= 9'b000000000;
+        if (R) Q <= 110'b0;
         else Q <= D;
     end
 endmodule
 
 module PipelineRegister_MEM_WB(Q, Clk, D, R);
     //RF_enable(1) =  1 bit
-    input D;
+    //PW = 32 bits
+    //RW = 5 bits
+    input [37:0] D;
     input Clk;
     input R;
-    output reg Q;
+    output reg [37:0] Q;
 
     always @(posedge Clk) begin
-        if (R) Q <= 0;
+        if (R) Q <= 37'b0;
         else Q <= D;
     end
 endmodule
