@@ -241,7 +241,7 @@ module MuxControlSignal(ControlSignals_Out, S, ControlSignals_In);
         end
 
 endmodule
-module MUXPC (input [31:0] ALU_out, input [31:0] Branch_Target_Address, input [31:0]NPC_Out, input [1:0] IF_Signal_In, output reg [31:0] MUXPC_Out);
+module MUXPC (output reg [31:0] MUXPC_Out, input [31:0] ALU_out, input [31:0] Branch_Target_Address, input [31:0]NPC_Out, input [1:0] IF_Signal_In);
   always @(ALU_out, Branch_Target_Address, NPC_Out, IF_Signal_In)
     	begin
       	case (IF_Signal_In)
@@ -265,7 +265,7 @@ module MUXPC (input [31:0] ALU_out, input [31:0] Branch_Target_Address, input [3
     	end
 endmodule
 
-module ProgramStatusRegister (input[3:0] Flags, input EX_modifyCC, output reg C, output reg [3:0] PSR_Out);
+module ProgramStatusRegister (output reg [3:0] PSR_Out, input[3:0] Flags, input EX_modifyCC, output reg C);
   reg [31:0] PSR_data;
   always @(Flags, EX_modifyCC)
     begin
@@ -275,7 +275,19 @@ module ProgramStatusRegister (input[3:0] Flags, input EX_modifyCC, output reg C,
      end
 endmodule
 
-module MUXPCIFID_Reset_Handler (input BCH_Out, input EX_jmpl_instr, input ID_Call_instr, input ID_29_a, input ID_B_instr, output reg IFID_Reset_Signal, output reg [1:0] PCMUX_Signal);
+module MUX_CC(CC_Out, EX_ALU_flags, PSR_Out, EX_ModifyCC);
+    input EX_ModifyCC;
+    input [3:0] PSR_Out;
+    input [3:0] EX_ALU_flags;
+    output reg [3:0] CC_Out;
+
+    always @(EX_ModifyCC) begin
+        if (EX_ModifyCC) CC_Out = EX_ALU_flags;
+        else CC_Out = PSR_Out;
+    end
+endmodule
+
+module MUXPCIFID_Reset_Handler (output reg IFID_Reset_Signal, output reg [1:0] PCMUX_Signal, input BCH_Out, input EX_jmpl_instr, input ID_Call_instr, input ID_29_a, input ID_B_instr);
    
   always @(EX_jmpl_instr,  ID_Call_instr, ID_B_instr, ID_29_a, BCH_Out)
     begin
@@ -310,7 +322,7 @@ module MUXPCIFID_Reset_Handler (input BCH_Out, input EX_jmpl_instr, input ID_Cal
     end
 endmodule
 
-module DISP22SE (input[21:0] Disp22, output reg [21:0] Disp22SE_Out);
+module DISP22SE (output reg [21:0] Disp22SE_Out, input[21:0] Disp22);
    
   always @(Disp22)
     begin
@@ -322,7 +334,7 @@ module DISP22SE (input[21:0] Disp22, output reg [21:0] Disp22SE_Out);
     
 endmodule
 
-module MUXCALLORBRANCH (input[21:0] Disp22SE_Out, input[29:0] Disp30, input ID_Call_instr, output reg [31:0] MUXCOB_Out);
+module MUXCALLORBRANCH (output reg [31:0] MUXCOB_Out,input[21:0] Disp22SE_Out, input[29:0] Disp30, input ID_Call_instr);
    
   always @(Disp22SE_Out, Disp30, ID_Call_instr)
     begin
@@ -333,6 +345,39 @@ module MUXCALLORBRANCH (input[21:0] Disp22SE_Out, input[29:0] Disp30, input ID_C
      end
     
 endmodule
+
+module Multiplicador4(Multiplicador4_Out, Multiplicador4_In);
+    input [29:0] Multiplicador4_In;
+    output reg [29:0] Multiplicador4_Out;
+
+    always @(Multiplicador4_In) 
+        begin
+            Multiplicador4_Out = Multiplicador4_In * 4; //nPC = nPC +4
+        end
+
+endmodule
+
+module Sumador_TA(Target_Address, PC, Multiplicador4_Out);
+    input [31:0] PC;
+    input [29:0] Multiplicador4_Out;
+    output reg [31:0] Target_Address;
+    
+    always @(PC, Multiplicador4_Out) begin
+        Target_Address = PC + Multiplicador4_Out;
+    end
+endmodule
+
+module ID_MUX_RD(RegistroDestino_Out, RegistroDestino_In, ID_Call_instr);
+    input ID_Call_instr;
+    input [4:0] RegistroDestino_In;
+    output reg [4:0]RegistroDestino_Out;
+
+    always @(*) begin
+        if (ID_Call_instr) RegistroDestino_Out = 5'b01111;
+        else RegistroDestino_Out = RegistroDestino_In;
+    end
+endmodule
+
 module Sumador4(nPC, PC); 
     input [31:0] PC;
     output reg [31:0] nPC;
@@ -532,6 +577,25 @@ module MEM_MUX_RF (Data_Out, PC, ALU_Out, Load_Data, MEM_load_instr, MEM_jmpl_in
         else if (MEM_load_instr) Data_Out = Load_Data;
     end
     
+endmodule
+
+module MUX_DataFowarding(Data_Out, Content_RegisterFile, Content_EX_RD, Content_MEM_RD, Content_WB_RD, Sig_DataHazard);
+    input [1:0] Sig_DataHazard;
+    input [31:0] Content_RegisterFile;
+    input [31:0] Content_MEM_RD;
+    input [31:0] Content_EX_RD; 
+    input [31:0] Content_WB_RD;
+    output reg [31:0] Data_Out;
+
+    always @(*) begin
+        case (Sig_DataHazard)
+            2'b00: Data_Out = Content_RegisterFile;
+            2'b01: Data_Out = Content_EX_RD;
+            2'b10: Data_Out = Content_MEM_RD;
+            2'b11: Data_Out = Content_WB_RD;
+        endcase
+    end
+
 endmodule
 
 module RegisterFile(PA, PB, PC, RA, RB, RC, RW, PW, Clk, LE);
