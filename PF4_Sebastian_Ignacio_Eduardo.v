@@ -231,7 +231,7 @@ module MuxControlSignal(ControlSignals_Out, S, ControlSignals_In);
                 ControlSignals_Out = ControlSignals_In;
             end
                 
-            1'b1: //No Operation
+            1'b1: //No Operation 
             begin
                 ControlSignals_Out = 16'b0;
             end
@@ -265,14 +265,18 @@ module MUXPC (output reg [31:0] MUXPC_Out, input [31:0] ALU_out, input [31:0] Br
     	end
 endmodule
 
-module ProgramStatusRegister (output reg [3:0] PSR_Out, input[3:0] Flags, input EX_modifyCC, output reg C);
+module ProgramStatusRegister (output reg C, output reg [3:0] PSR_Out, input[3:0] Flags, input EX_modifyCC );
   reg [31:0] PSR_data;
   always @(Flags, EX_modifyCC)
     begin
-      PSR_data[23:20] = {Flags[3:2], Flags[0], Flags[1]}; // Almacena los Flags/CC from Alu en bits 23-20
+      if (EX_modifyCC == 1)
+        begin
+          PSR_data[23:20] = {Flags[3:2], Flags[0], Flags[1]}; // Almacena los Flags/CC from Alu en bits 23-20
       PSR_Out = PSR_data[23:20];// La salida son los flags/cc del Alu
       C = PSR_data[20]; // La salida es el bit 20 del PSR
+        end
      end
+    
 endmodule
 
 module MUX_CC(CC_Out, EX_ALU_flags, PSR_Out, EX_ModifyCC);
@@ -322,6 +326,102 @@ module MUXPCIFID_Reset_Handler (output reg IFID_Reset_Signal, output reg [1:0] P
     end
 endmodule
 
+module ConditionHandlerBranch (output reg BCH_Out, input[3:0] MUXCC_Out, input[3:0] InstrCondIF, input ID_B_instr);
+  reg[3:0] mux;
+  reg N, Z, V, C;
+   
+  always @(MUXCC_Out, InstrCondIF, ID_B_instr)
+   
+    begin
+      if (ID_B_instr == 1) begin
+        mux = MUXCC_Out;
+    N = mux[3];
+   	Z = mux[2];
+  	V = mux[1];
+  	C = mux[0];
+        case (InstrCondIF)
+          4'b1000:  // ba
+             BCH_Out = 1;
+          4'b0000: // bn
+             BCH_Out = 0;
+          4'b1001: // bne
+            if(Z != 1)
+             BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+          4'b0001: // be
+            if(Z == 1)
+              BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+          4'b1010: // bg
+            if(Z == 0 ||(( V == 0 && N == 0))|| ((V == 1 && N == 1)))
+            BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+          4'b0010: //ble
+            if(Z == 1 ||(( V == 1 && N == 0))|| (V == 0 && N == 1))
+              BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+          4'b1011: //bge
+            if((V == 0 && N == 0)|| (V == 1 && N == 1))
+              BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+          4'b0011: //bl
+            if((V == 1 && N == 0)|| (V == 0 && N == 1))
+            BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+          4'b1100: //bgu
+               if(C != 1 || Z != 1)
+              BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+          4'b0100: //bleu
+               if(C == 1 || Z == 1)
+              BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+          4'b1101: //bcc
+               if(C !=1)
+              BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+          4'b0101: //bcs
+               if(C == 1)
+            BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+          4'b1110: //bpos
+               if(N != 1)
+              BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+          4'b0110: //bneg
+               if(N == 1)
+              BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+          4'b1111: //bvc
+               if(V != 1)
+            BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+          4'b0111: //bvs
+            if(V == 1)
+       		BCH_Out = 1;
+          else 
+            BCH_Out = 0;
+        endcase
+      end
+        else 
+          BCH_Out = 0;
+     end
+    
+endmodule
+
 module DISP22SE (output reg [21:0] Disp22SE_Out, input[21:0] Disp22);
    
   always @(Disp22)
@@ -334,7 +434,7 @@ module DISP22SE (output reg [21:0] Disp22SE_Out, input[21:0] Disp22);
     
 endmodule
 
-module MUXCALLORBRANCH (output reg [31:0] MUXCOB_Out,input[21:0] Disp22SE_Out, input[29:0] Disp30, input ID_Call_instr);
+module MUXCALLORBRANCH (output reg [31:0] MUXCOB_Out, input[21:0] Disp22SE_Out, input[29:0] Disp30, input ID_Call_instr);
    
   always @(Disp22SE_Out, Disp30, ID_Call_instr)
     begin
@@ -345,18 +445,15 @@ module MUXCALLORBRANCH (output reg [31:0] MUXCOB_Out,input[21:0] Disp22SE_Out, i
      end
     
 endmodule
-
+	
 module Multiplicador4(Multiplicador4_Out, Multiplicador4_In);
     input [29:0] Multiplicador4_In;
     output reg [29:0] Multiplicador4_Out;
-
-    always @(Multiplicador4_In) 
+    always @(Multiplicador4_In)
         begin
             Multiplicador4_Out = Multiplicador4_In * 4; //nPC = nPC +4
         end
-
 endmodule
-
 module Sumador_TA(Target_Address, PC, Multiplicador4_Out);
     input [31:0] PC;
     input [29:0] Multiplicador4_Out;
@@ -366,12 +463,10 @@ module Sumador_TA(Target_Address, PC, Multiplicador4_Out);
         Target_Address = PC + Multiplicador4_Out;
     end
 endmodule
-
 module ID_MUX_RD(RegistroDestino_Out, RegistroDestino_In, ID_Call_instr);
     input ID_Call_instr;
     input [4:0] RegistroDestino_In;
     output reg [4:0]RegistroDestino_Out;
-
     always @(*) begin
         if (ID_Call_instr) RegistroDestino_Out = 5'b01111;
         else RegistroDestino_Out = RegistroDestino_In;
@@ -583,10 +678,9 @@ module MUX_DataFowarding(Data_Out, Content_RegisterFile, Content_EX_RD, Content_
     input [1:0] Sig_DataHazard;
     input [31:0] Content_RegisterFile;
     input [31:0] Content_MEM_RD;
-    input [31:0] Content_EX_RD; 
+    input [31:0] Content_EX_RD;
     input [31:0] Content_WB_RD;
     output reg [31:0] Data_Out;
-
     always @(*) begin
         case (Sig_DataHazard)
             2'b00: Data_Out = Content_RegisterFile;
@@ -595,9 +689,7 @@ module MUX_DataFowarding(Data_Out, Content_RegisterFile, Content_EX_RD, Content_
             2'b11: Data_Out = Content_WB_RD;
         endcase
     end
-
 endmodule
-
 module RegisterFile(PA, PB, PC, RA, RB, RC, RW, PW, Clk, LE);
     input [4:0] RA, RB, RC, RW;
     input [31:0] PW;
