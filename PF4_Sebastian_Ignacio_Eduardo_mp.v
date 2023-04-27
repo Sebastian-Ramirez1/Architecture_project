@@ -1,7 +1,4 @@
 `include "PF4_Sebastian_Ignacio_Eduardo.v"
-`include "PF1_Ramirez_Renta_Sebastian_alu.v"
-
-
 
 module PF4ModuloPrueba;
 

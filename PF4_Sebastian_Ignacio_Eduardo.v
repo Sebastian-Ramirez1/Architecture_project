@@ -1,3 +1,5 @@
+`include "PF1_Ramirez_Renta_Sebastian_alu.v"
+
 module ControlUnit(output_signals, Instr);
     input [31:0] Instr;
     output reg [15:0] output_signals;
