@@ -435,7 +435,7 @@ module DISP22SE (output reg [31:0] Disp22SE_Out, input[21:0] Disp22);
     end
 endmodule
 
-module MUXCALLORBRANCH (output reg [31:0] MUXCOB_Out, input[21:0] Disp22SE_Out, input[29:0] Disp30, input ID_Call_instr);
+module MUXCALLORBRANCH (output reg [31:0] MUXCOB_Out, input[31:0] Disp22SE_Out, input[29:0] Disp30, input ID_Call_instr);
    
   always @(Disp22SE_Out, Disp30, ID_Call_instr)
     begin
@@ -448,8 +448,8 @@ module MUXCALLORBRANCH (output reg [31:0] MUXCOB_Out, input[21:0] Disp22SE_Out, 
 endmodule
 	
 module Multiplicador4(Multiplicador4_Out, Multiplicador4_In);
-    input [29:0] Multiplicador4_In;
-    output reg [29:0] Multiplicador4_Out;
+    input [31:0] Multiplicador4_In;
+    output reg [31:0] Multiplicador4_Out;
     always @(Multiplicador4_In)
         begin
             Multiplicador4_Out = Multiplicador4_In * 4; //nPC = nPC +4
@@ -457,7 +457,7 @@ module Multiplicador4(Multiplicador4_Out, Multiplicador4_In);
 endmodule
 module Sumador_TA(Target_Address, PC, Multiplicador4_Out);
     input [31:0] PC;
-    input [29:0] Multiplicador4_Out;
+    input [31:0] Multiplicador4_Out;
     output reg [31:0] Target_Address;
     
     always @(PC, Multiplicador4_Out) begin
