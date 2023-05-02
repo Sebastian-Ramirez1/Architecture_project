@@ -424,16 +424,15 @@ module ConditionHandlerBranch (output reg BCH_Out, input[3:0] MUXCC_Out, input[3
     
 endmodule
 
-module DISP22SE (output reg [21:0] Disp22SE_Out, input[21:0] Disp22);
+module DISP22SE (output reg [31:0] Disp22SE_Out, input[21:0] Disp22);
    
   always @(Disp22)
     begin
       if (Disp22[21] == 1) // si el bit mas significativo es 1 todo lo demas es 1
-        Disp22SE_Out = {22'b1111111111111111111111};
-        else 
-          Disp22SE_Out = {22'b0000000000000000000000}; // sino extiende 0
-     end
-    
+        Disp22SE_Out = {{10{1'b1}}, Disp22};
+    else
+      Disp22SE_Out = {{10{0'b1}}, Disp22};
+    end
 endmodule
 
 module MUXCALLORBRANCH (output reg [31:0] MUXCOB_Out, input[21:0] Disp22SE_Out, input[29:0] Disp30, input ID_Call_instr);
