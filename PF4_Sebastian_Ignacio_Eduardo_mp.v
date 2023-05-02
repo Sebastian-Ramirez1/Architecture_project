@@ -3,10 +3,14 @@
 module PF4ModuloPrueba;
 
     //inputs and outputs for MuxControlSignal
-    reg S; //MUXControlSignal Signal
+    //reg S; //MUXControlSignal Signal
     reg Clk; //Clock Signal 
     reg LE; //Load Enable Signal
     reg R; //Reset Signal
+
+    wire S; //MUX_NOP
+    wire IF_ID_enable;
+    wire PC_nPC_enable;
 
     //Input and Output for Control Unit and MUXControlSignal
     wire [15:0] Control_Unit_Out;
@@ -32,6 +36,7 @@ module PF4ModuloPrueba;
     wire [31:0] ID_PA; 
     wire [31:0] ID_PB; 
     wire [21:0] ID_Imm = {Instruction_ControlUnit[21:0]};
+    wire [3:0] InstrCondIF = {Instruction_ControlUnit[28:25]};
     wire [3:0] ID_31_30_24_13 = {Instruction_ControlUnit[31], Instruction_ControlUnit[30], Instruction_ControlUnit[24], Instruction_ControlUnit[13]};
     wire [4:0] ID_RD = {Instruction_ControlUnit[29:25]};
     wire [4:0] ID_RD_MUX;
@@ -42,9 +47,9 @@ module PF4ModuloPrueba;
     wire [31:0] Target_Address;
     wire [31:0] nPC_Out;
     wire [1:0] MUX_IF_Signal;
-    wire [1:0] Sig_DataHazard_EX;
-    wire [1:0] Sig_DataHazard_MEM;
-    wire [1:0] Sig_DataHazard_WB;
+    wire [1:0] Sig_MUX_PA;
+    wire [1:0] Sig_MUX_PB;
+    wire [1:0] Sig_MUX_DataIn;
     wire [31:0] MUX_PA_Out;
     wire [31:0] MUX_PB_Out;
     wire [31:0] MUX_DataIn_Out;
@@ -116,15 +121,14 @@ module PF4ModuloPrueba;
 
     wire [31:0] InstructionMemory_Out; //Output_InsturctionMemory => Input_PipeplineRegister_IF_ID
 
-    //IF
+// ETAPA IF
     PC PC(PC_Out, Clk, MUXPC_Out, LE, R); //instancia de PC
     Sumador4 Sumador4(Sumador4_Out, PC_In); // instancia de Sumador de PC
     nPC nPC(nPC_Out, Clk, Sumador4_Out, LE, R); // instancia de nPC
     MUXPC MUXPC (MUXPC_Out, EX_ALU_Out, Target_Address, nPC_Out, MUX_IF_Signal);
     InstructionMemory InstructionMemory(InstructionMemory_Out, PC_Out); //instancia de instruction memory
     MUXPCIFID_Reset_Handler  MUXPCIFID_Reset_Handler(IFID_Reset_Signal, MUX_IF_Signal, BranchCondition_Out, EX_jmpl_instr, ID_Call_instr, ID_29_a, ID_B_instr);
-   
-    //IF
+// ETAPAIF
 
     PipelineRegister_IF_ID PipelineRegister_IF_ID(IF_ID_out, Clk, IF_ID_in, LE, R);
 
@@ -132,36 +136,40 @@ module PF4ModuloPrueba;
 
     MuxControlSignal MuxControlSignal(Mux_out, S, Control_Unit_Out);
 
-    //ID
+//ETAPA ID
     DISP22SE DISP22SE (ID_BranchDisp22_SE, ID_BranchDisp22);
     MUXCALLORBRANCH MUXCALLORBRANCH (Mux_Call_Branch_Out, ID_BranchDisp22_SE, ID_CallDisp30, ID_Call_instr);
     Multiplicador4 Multiplicador4(Multiplicador4_Out, Mux_Call_Branch_Out);
     Sumador_TA Sumador_TA(Target_Address, ID_PC, Multiplicador4_Out);
 
     RegisterFile RegisterFile(ID_PA, ID_PB, ID_DataIn, ID_RA, ID_RB, ID_RDataIn, WB_RD, WB_PW, Clk, WB_RF_enable);
-    MUX_DataFowarding MUX_PA(MUX_PA_Out, ID_PA, EX_ALU_Out, MEM_PW, WB_PW, Sig_DataHazard_EX);
-    MUX_DataFowarding MUX_PB(MUX_PB_Out, ID_PB, EX_ALU_Out, MEM_PW, WB_PW, Sig_DataHazard_MEM);
-    MUX_DataFowarding MUX_DataIn(MUX_DataIn_Out, ID_DataIn, EX_ALU_Out, MEM_PW, WB_PW, Sig_DataHazard_WB);
+    MUX_DataFowarding MUX_PA(MUX_PA_Out, ID_PA, EX_ALU_Out, MEM_PW, WB_PW, Sig_MUX_PA);
+    MUX_DataFowarding MUX_PB(MUX_PB_Out, ID_PB, EX_ALU_Out, MEM_PW, WB_PW, Sig_MUX_PB);
+    MUX_DataFowarding MUX_DataIn(MUX_DataIn_Out, ID_DataIn, EX_ALU_Out, MEM_PW, WB_PW, Sig_MUX_DataIn);
     ID_MUX_RD ID_MUX_RD(ID_RD_MUX, ID_RD, ID_Call_instr);
-    //ID
+
+    Hazard_Unit Hazard_Unit(Sig_MUX_PA, Sig_MUX_PB, Sig_MUX_DataIn, IF_ID_enable, PC_nPC_enable, S, ID_RA, ID_RB, ID_RDataIn, EX_RD, MEM_RD, WB_RD, EX_RF_enable, MEM_RF_enable, WB_RF_enable, EX_load_instr);
+//ETAPA ID
 
     PipelineRegister_ID_EX PipelineRegister_ID_EX(ID_EX_out, Clk, ID_EX_in, R);
 
-    //EX
+// ETAPA EX
     ALU ALU(EX_ALU_Out, EX_ALU_flags, EX_ALU_op3, EX_PA, SourceOperandHanlder_Out, EX_Cin);
     Source_Operand2_Handler Source_Operand2_Handler(SourceOperandHanlder_Out, EX_31_30_24_13, EX_PB, EX_Imm);
 
-    ProgramStatusRegister PSR(PSR_Out, EX_ALU_flags, EX_modifyCC, EX_Cin);
+    ProgramStatusRegister PSR(EX_Cin, PSR_Out, EX_ALU_flags, EX_modifyCC);
     MUX_CC MUX_CC(MUXCC_Out, EX_ALU_flags, PSR_Out, EX_modifyCC);
-    //EX
+    ConditionHandlerBranch ConditionHandlerBranch(BranchCondition_Out, MUXCC_Out, InstrCondIF, ID_B_instr);
+//EX
 
     PipelineRegister_EX_MEM PipelineRegister_EX_MEM(EX_MEM_out, Clk, EX_MEM_in, R);
 
-    //MEM
+//ETAPA MEM
     DataMemory DataMemory(MEM_Load_Data, MEM_Read_Write, MEM_ALU_Out, MEM_DataIn, MEM_size_dm, MEM_SE_dm, MEM_DataMem_enable); //DataMemory
     MEM_MUX_RF MEM_MUX_RF (MEM_PW, MEM_PC, MEM_ALU_Out, MEM_Load_Data, MEM_load_instr, MEM_jmpl_instr, MEM_call_instr); //MUX MEM
-    //MEM
+//MEM
 
+//ETAPA WB
     PipelineRegister_MEM_WB PipelineRegister_MEM_WB(MEM_WB_out, Clk, MEM_WB_in, R);
 
     initial #56 $finish;
@@ -192,8 +200,8 @@ module PF4ModuloPrueba;
     end
 
     initial begin
-        S = 1'b0;  //La señal S del multiplexer debe tener un valor de cero a tiempo cero y debe cambiar a 1 a tiempo 40.
-        #40 S = ~S; 
+        //S = 1'b0;  //La señal S del multiplexer debe tener un valor de cero a tiempo cero y debe cambiar a 1 a tiempo 40.
+        //#40 S = ~S; 
     end
 
     initial begin

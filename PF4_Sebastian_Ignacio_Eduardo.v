@@ -692,6 +692,7 @@ module MUX_DataFowarding(Data_Out, Content_RegisterFile, Content_EX_RD, Content_
         endcase
     end
 endmodule
+
 module RegisterFile(PA, PB, PC, RA, RB, RC, RW, PW, Clk, LE);
     input [4:0] RA, RB, RC, RW;
     input [31:0] PW;
@@ -857,4 +858,74 @@ module binaryDecoder(O, RW, LE);
         end
         else  O = 32'b00000000000000000000000000000000;
 
+endmodule
+
+module Hazard_Unit(Sig_MUX_PA, Sig_MUX_PB, Sig_MUX_DataIn, IF_ID_enable, PC_nPC_enable, MUX_nop_signal, ID_RA, ID_RB, ID_RDataIn, EX_RD, MEM_RD, WB_RD, EX_RF_enable, MEM_RF_enable, WB_RF_enable, EX_load_instr);
+    input EX_RF_enable, MEM_RF_enable, WB_RF_enable, EX_load_instr;
+    input [4:0] ID_RA, ID_RB, ID_RDataIn, EX_RD, MEM_RD, WB_RD;
+    output reg IF_ID_enable, PC_nPC_enable, MUX_nop_signal;
+    output reg [1:0] Sig_MUX_PA, Sig_MUX_PB, Sig_MUX_DataIn;
+
+    always @(*) begin
+        IF_ID_enable = 1'b1; //Disable pipeline Load
+        PC_nPC_enable = 1'b1; //Disable PC load
+        MUX_nop_signal = 1'b0; //NOP; its suppose to 
+        Sig_MUX_PA = 2'b00;
+        Sig_MUX_PB = 2'b00;
+        Sig_MUX_DataIn = 2'b00;
+
+        //Data Hazard by LOAD
+        if(EX_load_instr && ( (ID_RA == EX_RD) || (ID_RB == EX_RD) )) 
+            begin
+                $display("DATA HAZARD BY LOAD");
+                IF_ID_enable = 0; //Disable pipelineregsiter IF_ID
+                PC_nPC_enable = 0; //Disable PC and nPC
+                MUX_nop_signal = 1;// NOP to mux
+            end
+
+        //Data Fowarding
+
+        //Fowarding for Rm (First Source Operand)
+        if( (EX_RF_enable) && (ID_RA == EX_RD) ) 
+            begin
+                Sig_MUX_PA = 2'b01; //EX_ALU_Out
+            end
+        else if ( (MEM_RF_enable) && (ID_RA == MEM_RD) )
+            begin
+                Sig_MUX_PA = 2'b10; //MEM_PW
+            end
+        else if ( (WB_RF_enable) && (ID_RA == WB_RD) )
+            begin
+                Sig_MUX_PA = 2'b11; //WB_PW
+            end
+
+        //Fowarding for Rn (Second Source Operand)
+        if ( (EX_RF_enable) && (ID_RB == EX_RD) ) 
+            begin
+                Sig_MUX_PB = 2'b01; //EX_ALU_Out
+            end
+        else if ( (MEM_RF_enable) && (ID_RB == MEM_RD) )
+            begin
+                Sig_MUX_PB = 2'b10; //MEM_PW
+            end
+        else if ( (WB_RF_enable) && (ID_RB == WB_RD) )
+            begin
+                Sig_MUX_PB = 2'b11; //WB_PW
+            end
+            
+        //Fowarding RDataIn (Store Source Operand)
+        if ( (EX_RF_enable) && (ID_RDataIn == EX_RD) ) 
+            begin
+                Sig_MUX_PB = 2'b01; //EX_ALU_Out
+            end
+        else if ( (MEM_RF_enable) && (ID_RDataIn == MEM_RD) )
+            begin
+                Sig_MUX_PB = 2'b10; //MEM_PW
+            end
+        else if ( (WB_RF_enable) && (ID_RDataIn == WB_RD) )
+            begin
+                Sig_MUX_PB = 2'b11; //WB_PW
+            end
+
+    end
 endmodule
