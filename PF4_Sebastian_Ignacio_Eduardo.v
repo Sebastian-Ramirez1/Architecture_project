@@ -431,7 +431,7 @@ module DISP22SE (output reg [31:0] Disp22SE_Out, input[21:0] Disp22);
       if (Disp22[21] == 1) // si el bit mas significativo es 1 todo lo demas es 1
         Disp22SE_Out = {{10{1'b1}}, Disp22};
     else
-      Disp22SE_Out = {{10{0'b1}}, Disp22};
+      Disp22SE_Out = {{10{1'b0}}, Disp22};
     end
 endmodule
 
