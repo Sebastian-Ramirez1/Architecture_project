@@ -215,7 +215,7 @@ module ControlUnit(output_signals, Instr);
 
             endcase
         
-            output_signals = {ID_jmpl_instr, ID_Read_Write, ID_ALU_op3, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_DataMem_enable};
+            output_signals = {ID_jmpl_instr, ID_Read_Write, ID_ALU_op3, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_DataMem_enable, ID_B_instr, ID_29_a};
         end
 
 endmodule
