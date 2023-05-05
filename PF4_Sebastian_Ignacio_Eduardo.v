@@ -429,9 +429,11 @@ module DISP22SE (output reg [31:0] Disp22SE_Out, input[21:0] Disp22);
   always @(Disp22)
     begin
       if (Disp22[21] == 1) // si el bit mas significativo es 1 todo lo demas es 1
-        Disp22SE_Out = {{10{1'b1}}, Disp22};
+        //Disp22SE_Out = {{10{1'b1}}, Disp22};
+        Disp22SE_Out = {10'b1111111111, Disp22};
     else
-      Disp22SE_Out = {{10{0'b1}}, Disp22};
+      //Disp22SE_Out = {{10{0'b1}}, Disp22};
+      Disp22SE_Out = {10'b0000000000, Disp22};
     end
 endmodule
 
@@ -592,18 +594,20 @@ module DataMemory(output reg[31:0] DataOut, input RW, input[31:0] Address, input
 end
 endmodule
 
-module PipelineRegister_IF_ID(Q, Clk, D, LE, R); //eliminar LE 
+module PipelineRegister_IF_ID(Q, Clk, D, LE, R, IF_ID_Reset); //eliminar LE 
     //PC = 32 bits
     //Instr = 32 bits
     input [63:0] D;
     input LE;
     input Clk;
     input R;
+    input IF_ID_Reset;
     output reg [63:0] Q;
 
     always @(posedge Clk) //0 --> 1 en Clk: entra al if
     begin
-        if (R) Q <= 64'b00000000000000000000000000000000; //un reset tienen el efecto de hacer cero todos los bits de salida del registro. 
+        if (R) Q <= 0; //un reset tienen el efecto de hacer cero todos los bits de salida del registro.
+        else if (IF_ID_Reset) Q <= 0; 
         else if (LE) Q <= D; // LE = 1  D --> Q //else
     end
 endmodule
@@ -623,7 +627,7 @@ module PipelineRegister_ID_EX(Q, Clk, D, R);
     output reg [172:0] Q;
 
     always @(posedge Clk) begin
-        if (R) Q <= 173'b00000000000000;
+        if (R) Q <= 173'b0;
         else Q <= D;
     end
 endmodule
@@ -655,7 +659,7 @@ module PipelineRegister_MEM_WB(Q, Clk, D, R);
     output reg [37:0] Q;
 
     always @(posedge Clk) begin
-        if (R) Q <= 37'b0;
+        if (R) Q <= 38'b0;
         else Q <= D;
     end
 endmodule
@@ -671,6 +675,7 @@ module MEM_MUX_RF (Data_Out, PC, ALU_Out, Load_Data, MEM_load_instr, MEM_jmpl_in
         if (MEM_call_instr) Data_Out = PC;
         else if (MEM_jmpl_instr) Data_Out = ALU_Out;
         else if (MEM_load_instr) Data_Out = Load_Data;
+        else Data_Out = ALU_Out;
     end
     
 endmodule
@@ -859,24 +864,21 @@ module binaryDecoder(O, RW, LE);
 
 endmodule
 
-module Hazard_Unit(Sig_MUX_PA, Sig_MUX_PB, Sig_MUX_DataIn, IF_ID_enable, PC_nPC_enable, MUX_nop_signal, ID_RA, ID_RB, ID_RDataIn, EX_RD, MEM_RD, WB_RD, EX_RF_enable, MEM_RF_enable, WB_RF_enable, EX_load_instr);
-    input EX_RF_enable, MEM_RF_enable, WB_RF_enable, EX_load_instr;
+module Hazard_Unit(Sig_MUX_PA, Sig_MUX_PB, Sig_MUX_DataIn, IF_ID_enable, PC_nPC_enable, MUX_nop_signal, ID_RA, ID_RB, ID_RDataIn, EX_RD, MEM_RD, WB_RD, EX_RF_enable, MEM_RF_enable, WB_RF_enable, EX_load_instr, ID_Read_Write);
+    input EX_RF_enable, MEM_RF_enable, WB_RF_enable, EX_load_instr, ID_Read_Write;
     input [4:0] ID_RA, ID_RB, ID_RDataIn, EX_RD, MEM_RD, WB_RD;
     output reg IF_ID_enable, PC_nPC_enable, MUX_nop_signal;
     output reg [1:0] Sig_MUX_PA, Sig_MUX_PB, Sig_MUX_DataIn;
 
     always @(*) begin
-        IF_ID_enable = 1'b1; //Disable pipeline Load
-        PC_nPC_enable = 1'b1; //Disable PC load
-        MUX_nop_signal = 1'b0; //NOP; its suppose to 
-        Sig_MUX_PA = 2'b00;
-        Sig_MUX_PB = 2'b00;
-        Sig_MUX_DataIn = 2'b00;
+        IF_ID_enable = 1'b1; //pipeline enable
+        PC_nPC_enable = 1'b1; //PC and nPC enable
+        MUX_nop_signal = 1'b0; //NOP signal
 
         //Data Hazard by LOAD
         if(EX_load_instr && ( (ID_RA == EX_RD) || (ID_RB == EX_RD) )) 
             begin
-                $display("DATA HAZARD BY LOAD");
+                $display("LOAD HAZARD");
                 IF_ID_enable = 0; //Disable pipelineregsiter IF_ID
                 PC_nPC_enable = 0; //Disable PC and nPC
                 MUX_nop_signal = 1;// NOP to mux
@@ -884,47 +886,59 @@ module Hazard_Unit(Sig_MUX_PA, Sig_MUX_PB, Sig_MUX_DataIn, IF_ID_enable, PC_nPC_
 
         //Data Fowarding
 
-        //Fowarding for Rm (First Source Operand)
+        //Fowarding for RA (First Source Operand)
         if( (EX_RF_enable) && (ID_RA == EX_RD) ) 
             begin
+                $display("DATA Foward RA ID<-EX");
                 Sig_MUX_PA = 2'b01; //EX_ALU_Out
             end
         else if ( (MEM_RF_enable) && (ID_RA == MEM_RD) )
             begin
+                $display("DATA Foward RA ID<-MEM");
                 Sig_MUX_PA = 2'b10; //MEM_PW
             end
         else if ( (WB_RF_enable) && (ID_RA == WB_RD) )
             begin
+                $display("DATA Foward RA ID<-WB");
                 Sig_MUX_PA = 2'b11; //WB_PW
             end
+        else Sig_MUX_PA = 2'b00; //RegisterFile_Out
 
-        //Fowarding for Rn (Second Source Operand)
+        //Fowarding for RB (Second Source Operand)
         if ( (EX_RF_enable) && (ID_RB == EX_RD) ) 
             begin
+                $display("DATA Foward RB ID<-EX");
                 Sig_MUX_PB = 2'b01; //EX_ALU_Out
             end
         else if ( (MEM_RF_enable) && (ID_RB == MEM_RD) )
             begin
+                $display("DATA Foward RB ID<-MEM");
                 Sig_MUX_PB = 2'b10; //MEM_PW
             end
         else if ( (WB_RF_enable) && (ID_RB == WB_RD) )
             begin
+                $display("DATA Foward RB ID<-WB");
                 Sig_MUX_PB = 2'b11; //WB_PW
             end
+        else Sig_MUX_PB = 2'b00; //RegisterFile_Out
             
         //Fowarding RDataIn (Store Source Operand)
-        if ( (EX_RF_enable) && (ID_RDataIn == EX_RD) ) 
+        if ( (EX_RF_enable) && (ID_RDataIn == EX_RD) && (ID_Read_Write == 1) ) 
             begin
-                Sig_MUX_PB = 2'b01; //EX_ALU_Out
+                $display("DATA Foward RDataIn ID<-EX");
+                Sig_MUX_DataIn = 2'b01; //EX_ALU_Out
             end
-        else if ( (MEM_RF_enable) && (ID_RDataIn == MEM_RD) )
+        else if ( (MEM_RF_enable) && (ID_RDataIn == MEM_RD) && (ID_Read_Write == 1) )
             begin
-                Sig_MUX_PB = 2'b10; //MEM_PW
+                $display("DATA Foward RDataIn ID<-MEM");
+                Sig_MUX_DataIn = 2'b10; //MEM_PW
             end
-        else if ( (WB_RF_enable) && (ID_RDataIn == WB_RD) )
+        else if ( (WB_RF_enable) && (ID_RDataIn == WB_RD) && (ID_Read_Write == 1) )
             begin
-                Sig_MUX_PB = 2'b11; //WB_PW
+                $display("DATA Foward RDataIn ID<-WB");
+                Sig_MUX_DataIn = 2'b11; //WB_PW
             end
+        else Sig_MUX_DataIn = 2'b00; //RegisterFile_out
 
     end
 endmodule
