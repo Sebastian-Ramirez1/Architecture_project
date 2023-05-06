@@ -222,8 +222,10 @@ endmodule
 
 module MuxControlSignal(ControlSignals_Out, S, ControlSignals_In);
     input S;
-    input [15:0] ControlSignals_In;
-    output reg [15:0] ControlSignals_Out;
+    // input [15:0] ControlSignals_In;
+    // output reg [15:0] ControlSignals_Out;
+    input [13:0] ControlSignals_In;
+    output reg [13:0] ControlSignals_Out;
 
     always @(*) 
         begin

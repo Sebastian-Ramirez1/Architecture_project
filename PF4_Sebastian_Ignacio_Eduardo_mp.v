@@ -13,70 +13,80 @@ module PF4ModuloPrueba;
     wire PC_nPC_enable;
 
     //Input and Output for Control Unit and MUXControlSignal
+    wire [31:0] Instruction_ControlUnit; //Output_Pipeline_Register_IF_ID => Input_ControlUnit and Input_PipelineRegister_ID_EX
     wire [15:0] Control_Unit_Out;
-
     wire ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_DataMem_enable;
     wire [1:0] ID_size_dm; 
     wire [3:0] ID_ALU_op3;
-    
-    wire [15:0] Mux_out;
+
+
+    wire [13:0] Mux_in = {Control_Unit_Out[15:2]};
+    assign ID_29_a = Control_Unit_Out[0];
+    assign ID_B_instr = Control_Unit_Out[1];
+    assign ID_Call_instr = Control_Unit_Out[3];
+    wire [13:0] Mux_out;
 
     //Input Signals for Pipeline_IF_ID
-    //wire [63:0] IF_ID_in = {InstructionMemory_Out ,PC_Out};
-    //wire [63:0] IF_ID_in; 
-    //assign {InstructionMemory_Out, PC_Out} = IF_ID_in;
-    //wire [63:0] IF_ID_out = {Instruction_ControlUnit, ID_PC};
-    //wire [63:0] IF_ID_out;
-    //assign {Instruction_ControlUnit, ID_PC} = IF_ID_out;
-    wire [31:0] ID_PC; 
+    wire [31:0] InstructionMemory_Out; //Output_InsturctionMemory => Input_PipeplineRegister_IF_ID
+    wire [31:0] MUXPC_Out;
+    wire [1:0] MUX_IF_Signal;
+    wire [31:0] PC_Out; //Ouput_PC => Input_Sumador4 and Input_InstructionMemory
+    wire [31:0] Sumador4_Out; //Output Sumador4 => Input_nPC
+    wire [31:0] nPC_Out;
+    
+    wire [63:0] IF_ID_in = {InstructionMemory_Out, PC_Out};
+    wire [63:0] IF_ID_out;
+
     //wire IFID_Reset_Signal;
 
     //Input Signals for Pipeline_ID_EX
-    wire [172:0] ID_EX_in = {Mux_out[15:3], Mux_out[0]};
-    //assign {EX_PC, MUX_DataIn_Out, MUX_PA_Out, MUX_PB_Out, ID_RD_MUX, ID_31_30_24_13, ID_Imm, ID_jmpl_instr, ID_Read_Write, ID_ALU_op3, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_DataMem_enable} = ID_EX_in;
-    //{ID_PC, MUX_DataIn_Out, MUX_PA_Out, MUX_PB_Out, ID_RD_MUX, ID_31_30_24_13, ID_Imm, Mux_out[15:3], Mux_out[0]};
-    assign ID_jmpl_instr = Mux_out[15];
-    assign ID_Read_Write = Mux_out[14];
-    assign ID_ALU_op3 = Mux_out[13:10];
-    assign ID_SE_dm = Mux_out[9]; 
-    assign ID_load_instr = Mux_out[8];
-    assign ID_RF_enable = Mux_out[7]; 
-    assign ID_size_dm = Mux_out[6:5];
-    assign ID_modifyCC = Mux_out[4];
-    assign ID_Call_instr = Mux_out[3];
-    assign ID_B_instr = Mux_out[2];
-    assign ID_29_a = Mux_out[1];
-    assign ID_DataMem_enable = Mux_out[0];
-    wire [31:0] ID_DataIn; 
-    wire [31:0] ID_PA; 
-    wire [31:0] ID_PB; 
-    wire [21:0] ID_Imm = {Instruction_ControlUnit[21:0]};
-    wire [3:0] InstrCondIF = {Instruction_ControlUnit[28:25]};
-    wire [3:0] ID_31_30_24_13 = {Instruction_ControlUnit[31], Instruction_ControlUnit[30], Instruction_ControlUnit[24], Instruction_ControlUnit[13]};
+    wire [31:0] ID_PC;
+    assign {Instruction_ControlUnit, ID_PC} = IF_ID_out;
+
+    wire [29:0] ID_CallDisp30 = {Instruction_ControlUnit[29:0]};
+    wire [21:0] ID_BranchDisp22 = {Instruction_ControlUnit[21:0]};
+    wire [31:0] ID_BranchDisp22_SE;
+    wire [31:0] Mux_Call_Branch_Out;
+    wire [31:0] Multiplicador4_Out;
+    wire [31:0] Target_Address;
+
+    wire [4:0] ID_RA = {Instruction_ControlUnit[18:14]};
     wire [4:0] ID_RD = {Instruction_ControlUnit[29:25]};
     wire [4:0] ID_RD_MUX;
-    wire [4:0] ID_RA = {Instruction_ControlUnit[18:14]};
     wire [4:0] ID_RB = {Instruction_ControlUnit[4:0]};
-    wire [4:0] ID_RDataIn = {Instruction_ControlUnit[29:25]};
-    wire [31:0] MUXPC_Out;
-    wire [31:0] Target_Address;
-    wire [31:0] nPC_Out;
-    wire [1:0] MUX_IF_Signal;
+    wire [31:0] ID_PA; 
+    wire [31:0] ID_DataIn; 
+    wire [31:0] ID_PB; 
     wire [1:0] Sig_MUX_PA;
-    wire [1:0] Sig_MUX_PB;
     wire [1:0] Sig_MUX_DataIn;
+    wire [1:0] Sig_MUX_PB;
     wire [31:0] MUX_PA_Out;
-    wire [31:0] MUX_PB_Out;
     wire [31:0] MUX_DataIn_Out;
+    wire [31:0] MUX_PB_Out;
+    
+    wire [3:0] ID_31_30_24_13 = {Instruction_ControlUnit[31], Instruction_ControlUnit[30], Instruction_ControlUnit[24], Instruction_ControlUnit[13]};
+    wire [21:0] ID_Imm = {Instruction_ControlUnit[21:0]};
+    wire [3:0] InstrCondIF = {Instruction_ControlUnit[28:25]};
 
-
+    wire [172:0] ID_EX_in = {ID_PC, MUX_DataIn_Out, MUX_PA_Out, MUX_PB_Out, ID_RD_MUX, ID_31_30_24_13, ID_Imm, Mux_out};
+    
+    // ID Control Signals for Monitor Function
+    assign ID_jmpl_instr = Mux_out[13];
+    assign ID_Read_Write = Mux_out[12];
+    assign ID_ALU_op3 = Mux_out[11:8];
+    assign ID_SE_dm = Mux_out[7]; 
+    assign ID_load_instr = Mux_out[6];
+    assign ID_RF_enable = Mux_out[5]; 
+    assign ID_size_dm = Mux_out[4:3];
+    assign ID_modifyCC = Mux_out[2];
+    assign ID_Call_instr = Mux_out[1];
+    assign ID_DataMem_enable = Mux_out[0];
+    
+    // wire [4:0] ID_RDataIn = {Instruction_ControlUnit[29:25]};
+    
     //Output Signals for PipelineRegister_ID_EX
-    wire EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_modifyCC, EX_Call_instr, EX_DataMem_enable;
-    wire [1:0] EX_size_dm; 
-    wire [3:0] EX_ALU_op3;
-
-    //wire [172:0] ID_EX_out;
-    //assign {EX_PC, EX_DataIn, EX_PA, EX_PB, EX_RD, EX_31_30_24_13, EX_Imm, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_Call_instr, EX_DataMem_enable} = ID_EX_out;
+    wire [172:0] ID_EX_out;
+    
     wire [31:0] EX_PC; 
     wire [31:0] EX_DataIn; 
     wire [31:0] EX_PA; 
@@ -90,11 +100,12 @@ module PF4ModuloPrueba;
     wire [3:0] PSR_Out;
     wire [3:0] MUXCC_Out;
     wire BranchCondition_Out;
-    wire [29:0] ID_CallDisp30 = {Instruction_ControlUnit[29:0]};
-    wire [21:0] ID_BranchDisp22 = {Instruction_ControlUnit[21:0]};
-    wire [31:0] Mux_Call_Branch_Out;
-    wire [31:0] ID_BranchDisp22_SE;
-    wire [31:0] Multiplicador4_Out;
+
+    wire EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_modifyCC, EX_Call_instr, EX_DataMem_enable;
+    wire [1:0] EX_size_dm; 
+    wire [3:0] EX_ALU_op3;
+
+    assign {EX_PC, EX_DataIn, EX_PA, EX_PB, EX_RD, EX_31_30_24_13, EX_Imm, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_Call_instr, EX_DataMem_enable} = ID_EX_out;
 
     //Input signals EX_MEM
     //wire [109:0] EX_MEM_in = {EX_PC, EX_DataIn, EX_ALU_Out, EX_RD, EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_Call_instr, EX_DataMem_enable};
@@ -124,17 +135,12 @@ module PF4ModuloPrueba;
     wire [31:0] WB_PW;
     wire [4:0] WB_RD;
 
-    wire [31:0] Instruction_ControlUnit; //Output_Pipeline_Register_IF_ID => Input_ControlUnit and Input_PipelineRegister_ID_EX
-
     integer fr, fw, code, fo; //variables para leer archivo
     reg [7:0] FileData; //variablele to store the data from file
     reg [7:0] Address; //variable to indicate where to store in the instruction memory
 
-    wire [31:0] PC_In; //Output_nPC => Input_PC
-    wire [31:0] PC_Out; //Ouput_PC => Input_Sumador4 and Input_InstructionMemory
-    wire [31:0] Sumador4_Out; //Output Sumador4 => Input_nPC
-
-    wire [31:0] InstructionMemory_Out; //Output_InsturctionMemory => Input_PipeplineRegister_IF_ID
+    // wire [31:0] PC_In; //Output_nPC => Input_PC
+    
 
 // ETAPA IF
     PC PC(PC_Out, Clk, MUXPC_Out, PC_nPC_enable, R); //instancia de PC
@@ -146,11 +152,11 @@ module PF4ModuloPrueba;
 // ETAPAIF
 
     //PipelineRegister_IF_ID PipelineRegister_IF_ID(IF_ID_out, Clk, IF_ID_in, LE, R);
-    PipelineRegister_IF_ID PipelineRegister_IF_ID({Instruction_ControlUnit, ID_PC}, Clk, {InstructionMemory_Out ,PC_Out}, LE, R, IFID_Reset_Signal);
+    PipelineRegister_IF_ID PipelineRegister_IF_ID(IF_ID_out, Clk, IF_ID_in, LE, R, IFID_Reset_Signal);
 
     ControlUnit ControlUnit(Control_Unit_Out, Instruction_ControlUnit);
 
-    MuxControlSignal MuxControlSignal(Mux_out, S, Control_Unit_Out);
+    MuxControlSignal MuxControlSignal(Mux_out, S, Mux_in);
 
 //ETAPA ID
     DISP22SE DISP22SE (ID_BranchDisp22_SE, ID_BranchDisp22);
@@ -158,16 +164,16 @@ module PF4ModuloPrueba;
     Multiplicador4 Multiplicador4(Multiplicador4_Out, Mux_Call_Branch_Out);
     Sumador_TA Sumador_TA(Target_Address, ID_PC, Multiplicador4_Out);
 
-    RegisterFile RegisterFile(ID_PA, ID_PB, ID_DataIn, ID_RA, ID_RB, ID_RDataIn, WB_RD, WB_PW, Clk, WB_RF_enable);
+    RegisterFile RegisterFile(ID_PA, ID_PB, ID_DataIn, ID_RA, ID_RB, ID_RD, WB_RD, WB_PW, Clk, WB_RF_enable);
     MUX_DataFowarding MUX_PA(MUX_PA_Out, ID_PA, EX_ALU_Out, MEM_PW, WB_PW, Sig_MUX_PA);
     MUX_DataFowarding MUX_PB(MUX_PB_Out, ID_PB, EX_ALU_Out, MEM_PW, WB_PW, Sig_MUX_PB);
     MUX_DataFowarding MUX_DataIn(MUX_DataIn_Out, ID_DataIn, EX_ALU_Out, MEM_PW, WB_PW, Sig_MUX_DataIn);
     ID_MUX_RD ID_MUX_RD(ID_RD_MUX, ID_RD, ID_Call_instr);
 
-    Hazard_Unit Hazard_Unit(Sig_MUX_PA, Sig_MUX_PB, Sig_MUX_DataIn, IF_ID_enable, PC_nPC_enable, S, ID_RA, ID_RB, ID_RDataIn, EX_RD, MEM_RD, WB_RD, EX_RF_enable, MEM_RF_enable, WB_RF_enable, EX_load_instr, ID_Read_Write);
+    Hazard_Unit Hazard_Unit(Sig_MUX_PA, Sig_MUX_PB, Sig_MUX_DataIn, IF_ID_enable, PC_nPC_enable, S, ID_RA, ID_RB, ID_RD, EX_RD, MEM_RD, WB_RD, EX_RF_enable, MEM_RF_enable, WB_RF_enable, EX_load_instr, ID_Read_Write);
 //ETAPA ID
 
-    PipelineRegister_ID_EX PipelineRegister_ID_EX({EX_PC, EX_DataIn, EX_PA, EX_PB, EX_RD, EX_31_30_24_13, EX_Imm, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_Call_instr, EX_DataMem_enable}, Clk, {ID_PC, MUX_DataIn_Out, MUX_PA_Out, MUX_PB_Out, ID_RD_MUX, ID_31_30_24_13, ID_Imm, Mux_out[15:3], Mux_out[0]}, R);
+    PipelineRegister_ID_EX PipelineRegister_ID_EX(ID_EX_out, Clk, ID_EX_in, R);
 
 // ETAPA EX
     ALU ALU(EX_ALU_Out, EX_ALU_flags, EX_ALU_op3, EX_PA, SourceOperandHanlder_Out, EX_Cin);
@@ -237,8 +243,8 @@ module PF4ModuloPrueba;
 
     initial begin
 
-        $monitor("Instruccion: %b PC: %d nPC: %d Reset: %b  pC_nPC_enable: %b, IF_ID_Enable: %b  S: %b  Time: %d \n ID_ALU_op3 %b ID_jmpl_instr: %b , ID_Read_Write: %b , ID_SE_dm: %b , ID_load_instr: %b , ID_RF_enable: %b , ID_size_dm: %b , ID_modifyCC: %b , ID_Call_instr: %b , ID_B_instr: %b , ID_29_a: %b , ID_DataMem_Enable: %b, ID_RA: %d, ID_RB: %d, ID_RD: %d, ID_RDataIN: %d, ID_PC: %d, sig_MUX_PA: %b, MUX_PA_OUT: %d, sig_MUX_PB: %b, MUX_PB_OUT: %d, Sig_MUX_DAtaIN: %b, MUX_DATAIN_OUT: %d, BranchCOndition: %b, MUX_IF_signal: %b \n EX_jmpl_instr: %b, EX_ALU_op: %b , EX_Read_Write: %b, EX_SE_dm: %b , EX_load_instr: %b , EX_RF_enable: %b, EX_size_dm: %b , EX_modifyCC: %b , EX_call_instr: %b , EX_DataMem_enable: %b, EX_RD: %d, EX_PC: %d, EX_ALU_Out: %d, EX_PA: %d, EX_PB: %d, EX_Imm: %d, SourceOperandHanlder_Out: %d, EX_ALU_Flags: %b, PSR_Out: %b, MUXCC_Out: %b \n MEM_jmpl_instr: %b , MEM_Read_Write: %b , MEM_SE_dm: %b , MEM_load_instr: %b , MEM_RF_enable: %b , MEM_size_dm: %b , MEM_call_instr: %b , MEM_DataMem_enable: %b, MEM_RD: %d, MEM_PC: %d, MEM_PW: %d, MEM_Data_Load: %d, MEM_ALU_OUT: %d \n WB_RF_enable: %b, WB_RD: %d, WB_PW: %d\n", 
-        Instruction_ControlUnit, PC_Out, nPC_Out, IFID_Reset_Signal, PC_nPC_enable, IF_ID_enable , S, $time, ID_ALU_op3, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_DataMem_enable, ID_RA, ID_RB, ID_RD, ID_RDataIn, ID_PC, Sig_MUX_PA, MUX_PA_Out, Sig_MUX_PB, MUX_PB_Out, Sig_MUX_DataIn, MUX_DataIn_Out, BranchCondition_Out, MUX_IF_Signal,
+        $monitor("Instruccion: %b PC: %d nPC: %d Reset: %b  pC_nPC_enable: %b, IF_ID_Enable: %b  S: %b  Time: %d \n ID_ALU_op3 %b ID_jmpl_instr: %b , ID_Read_Write: %b , ID_SE_dm: %b , ID_load_instr: %b , ID_RF_enable: %b , ID_size_dm: %b , ID_modifyCC: %b , ID_Call_instr: %b , ID_B_instr: %b , ID_29_a: %b , ID_DataMem_Enable: %b, ID_RA: %d, ID_RB: %d, ID_RD: %d, ID_RDataIN: %d, ID_PC: %d, sig_MUX_PA: %b, MUX_PA_Out: %d, sig_MUX_PB: %b, MUX_PB_Out: %d, Sig_MUX_DataIn: %b, MUX_DataIn_Out: %d, BranchCOndition: %b, MUX_IF_signal: %b \n EX_jmpl_instr: %b, EX_ALU_op: %b , EX_Read_Write: %b, EX_SE_dm: %b , EX_load_instr: %b , EX_RF_enable: %b, EX_size_dm: %b , EX_modifyCC: %b , EX_call_instr: %b , EX_DataMem_enable: %b, EX_RD: %d, EX_PC: %d, EX_ALU_Out: %d, EX_PA: %d, EX_PB: %d, EX_Imm: %d, SourceOperandHanlder_Out: %d, EX_ALU_Flags: %b, PSR_Out: %b, MUXCC_Out: %b \n MEM_jmpl_instr: %b , MEM_Read_Write: %b , MEM_SE_dm: %b , MEM_load_instr: %b , MEM_RF_enable: %b , MEM_size_dm: %b , MEM_call_instr: %b , MEM_DataMem_enable: %b, MEM_RD: %d, MEM_PC: %d, MEM_PW: %d, MEM_Data_Load: %d, MEM_ALU_OUT: %d \n WB_RF_enable: %b, WB_RD: %d, WB_PW: %d\n", 
+        Instruction_ControlUnit, PC_Out, nPC_Out, IFID_Reset_Signal, PC_nPC_enable, IF_ID_enable , S, $time, ID_ALU_op3, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_DataMem_enable, ID_RA, ID_RB, ID_RD, /*ID_RDataIn*/ ID_RD, ID_PC, Sig_MUX_PA, MUX_PA_Out, Sig_MUX_PB, MUX_PB_Out, Sig_MUX_DataIn, MUX_DataIn_Out, BranchCondition_Out, MUX_IF_Signal,
         EX_jmpl_instr, EX_ALU_op3, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_Call_instr, EX_DataMem_enable, EX_RD, EX_PC, EX_ALU_Out, EX_PA, EX_PB, EX_Imm, SourceOperandHanlder_Out, EX_ALU_flags, PSR_Out, MUXCC_Out,
         MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_Call_instr, MEM_DataMem_enable, MEM_RD, MEM_PC, MEM_PW, MEM_Load_Data, MEM_ALU_Out,
         WB_RF_enable, WB_RD, WB_PW);
