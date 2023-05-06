@@ -89,14 +89,17 @@ module PF4ModuloPrueba;
     
     wire [31:0] EX_PC; 
     wire [31:0] EX_DataIn; 
-    wire [31:0] EX_PA; 
-    wire [31:0] EX_PB; 
     wire [4:0] EX_RD; 
-    wire [3:0] EX_31_30_24_13;
+
+    wire [31:0] EX_PA; 
+    wire [31:0] EX_PB;
     wire [21:0] EX_Imm;
-    wire [3:0] EX_ALU_flags;
+    wire [3:0] EX_31_30_24_13;
     wire [31:0] SourceOperandHanlder_Out;
     wire EX_Cin;
+    wire [31:0] EX_ALU_Out;
+    wire [3:0] EX_ALU_flags;
+
     wire [3:0] PSR_Out;
     wire [3:0] MUXCC_Out;
     wire BranchCondition_Out;
@@ -108,33 +111,40 @@ module PF4ModuloPrueba;
     assign {EX_PC, EX_DataIn, EX_PA, EX_PB, EX_RD, EX_31_30_24_13, EX_Imm, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_Call_instr, EX_DataMem_enable} = ID_EX_out;
 
     //Input signals EX_MEM
-    //wire [109:0] EX_MEM_in = {EX_PC, EX_DataIn, EX_ALU_Out, EX_RD, EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_Call_instr, EX_DataMem_enable};
-    wire [31:0] EX_ALU_Out;
+    wire [109:0] EX_MEM_in = {EX_PC, EX_DataIn, EX_ALU_Out, EX_RD, EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_Call_instr, EX_DataMem_enable};
 
     //Output Signals for PipelineRegister_EX_MEM
-    wire MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_Call_instr, MEM_DataMem_enable;
-    wire [1:0] MEM_size_dm;
-    //wire [109:0] EX_MEM_out;
-    //assign {MEM_PC, MEM_DataIn, MEM_ALU_Out, MEM_RD, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_Call_instr, MEM_DataMem_enable} = EX_MEM_out;
-    wire [31:0] Load_Data_Out;
+    wire [109:0] EX_MEM_out;
+
     wire [31:0] MEM_PC;
+    wire [4:0] MEM_RD;
     wire [31:0] MEM_DataIn;
     wire [31:0] MEM_ALU_Out;
-    wire [4:0] MEM_RD;
     wire [31:0] MEM_Load_Data;
-
-    //Input Signals MEM_WB
-    //wire [37:0] MEM_WB_in;
-    //assign {MEM_PW, MEM_RD, MEM_RF_enable} = MEM_WB_in;
     wire [31:0] MEM_PW;
+
+    wire MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_Call_instr, MEM_DataMem_enable;
+    wire [1:0] MEM_size_dm;
+
+    assign {MEM_PC, MEM_DataIn, MEM_ALU_Out, MEM_RD, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_Call_instr, MEM_DataMem_enable} = EX_MEM_out;
+
+    // wire [31:0] Load_Data_Out;
+    
+    //Input Signals MEM_WB
+    wire [37:0] MEM_WB_in;
+    assign MEM_WB_in = {MEM_PW, MEM_RD, MEM_RF_enable};
     
     //Output Signals for PipelineRegister_MEM_WB
-    //wire [37:0] MEM_WB_out;
-    //assign {WB_PW, WB_RD, WB_RF_enable} = MEM_WB_out;
-    wire WB_RF_enable;
+    wire [37:0] MEM_WB_out;
+
     wire [31:0] WB_PW;
     wire [4:0] WB_RD;
 
+    wire WB_RF_enable;
+
+    assign {WB_PW, WB_RD, WB_RF_enable} = MEM_WB_out;
+    
+    // Code for Loading Instructions
     integer fr, fw, code, fo; //variables para leer archivo
     reg [7:0] FileData; //variablele to store the data from file
     reg [7:0] Address; //variable to indicate where to store in the instruction memory
@@ -184,7 +194,7 @@ module PF4ModuloPrueba;
     ConditionHandlerBranch ConditionHandlerBranch(BranchCondition_Out, MUXCC_Out, InstrCondIF, ID_B_instr);
 //EX
 
-    PipelineRegister_EX_MEM PipelineRegister_EX_MEM({MEM_PC, MEM_DataIn, MEM_ALU_Out, MEM_RD, MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_Call_instr, MEM_DataMem_enable}, Clk, {EX_PC, EX_DataIn, EX_ALU_Out, EX_RD, EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_Call_instr, EX_DataMem_enable}, R);
+    PipelineRegister_EX_MEM PipelineRegister_EX_MEM(EX_MEM_out, Clk, EX_MEM_in, R);
 
 //ETAPA MEM
     DataMemory DataMemory(MEM_Load_Data, MEM_Read_Write, MEM_ALU_Out, MEM_DataIn, MEM_size_dm, MEM_SE_dm, MEM_DataMem_enable); //DataMemory
@@ -192,8 +202,8 @@ module PF4ModuloPrueba;
 //MEM
 
 //ETAPA WB
-    PipelineRegister_MEM_WB PipelineRegister_MEM_WB({WB_PW, WB_RD, WB_RF_enable}, Clk, {MEM_PW, MEM_RD, MEM_RF_enable}, R);
-    //PipelineRegister_MEM_WB PipelineRegister_MEM_WB(MEM_WB_out, Clk, MEM_WB_in, R);
+    // PipelineRegister_MEM_WB PipelineRegister_MEM_WB({WB_PW, WB_RD, WB_RF_enable}, Clk, {MEM_PW, MEM_RD, MEM_RF_enable}, R);
+    PipelineRegister_MEM_WB PipelineRegister_MEM_WB(MEM_WB_out, Clk, MEM_WB_in, R);
 
     initial #56 $finish;
 
