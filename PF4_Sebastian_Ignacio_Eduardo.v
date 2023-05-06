@@ -270,16 +270,23 @@ module MUXPC (output reg [31:0] MUXPC_Out, input [31:0] ALU_out, input [31:0] Br
 endmodule
 
 module ProgramStatusRegister (output reg C, output reg [3:0] PSR_Out, input[3:0] Flags, input EX_modifyCC );
-  reg [31:0] PSR_data;
-  always @(Flags, EX_modifyCC)
-    begin
+reg [3:0] PSR_data;
+always @(Flags, EX_modifyCC)
+  begin
       if (EX_modifyCC == 1)
-        begin
-          PSR_data[23:20] = {Flags[3:2], Flags[0], Flags[1]}; // Almacena los Flags/CC from Alu en bits 23-20
-      PSR_Out = PSR_data[23:20];// La salida son los flags/cc del Alu
-      C = PSR_data[20]; // La salida es el bit 20 del PSR
-        end
-     end
+          begin
+          //PSR_data[3:0] <= {Flags[3:2], Flags[0], Flags[1]}; // Almacena los Flags/CC from Alu en bits 23-20
+          PSR_data <= Flags;
+          //PSR_Out <= PSR_data[3:0];// La salida son los flags/cc del Alu
+          PSR_Out <= Flags;
+          C <= PSR_data[2]; // La salida es el bit 20 del PSR
+          end
+      else begin
+          PSR_Out <= PSR_data;
+          C <= PSR_data[2];
+      end
+      
+   end
     
 endmodule
 
@@ -289,7 +296,7 @@ module MUX_CC(CC_Out, EX_ALU_flags, PSR_Out, EX_ModifyCC);
     input [3:0] EX_ALU_flags;
     output reg [3:0] CC_Out;
 
-    always @(EX_ModifyCC) begin
+    always @(*) begin
         if (EX_ModifyCC) CC_Out = EX_ALU_flags;
         else CC_Out = PSR_Out;
     end
@@ -313,11 +320,11 @@ module MUXPCIFID_Reset_Handler (output reg IFID_Reset_Signal, output reg [1:0] P
           PCMUX_Signal = 2'b00; // la instruction es un call
         end
       
-      if (ID_B_instr == 1)
+    //   if (ID_B_instr == 1)
         
-        begin
-          PCMUX_Signal = 2'b01; // hay un branch en el instruction
-        end
+    //     begin
+    //       PCMUX_Signal = 2'b01; // hay un branch en el instruction
+    //     end
       
        if (EX_jmpl_instr == 1) 
         begin
@@ -339,10 +346,14 @@ module ConditionHandlerBranch (output reg BCH_Out, input[3:0] MUXCC_Out, input[3
     begin
       if (ID_B_instr == 1) begin
         mux = MUXCC_Out;
-    N = mux[3];
-   	Z = mux[2];
-  	V = mux[1];
-  	C = mux[0];
+    // N = mux[3];
+   	// Z = mux[2];
+  	// V = mux[1];
+  	// C = mux[0];
+      Z = mux[3];
+      N = mux[2];
+      C = mux[1];
+      V = mux[0];
         case (InstrCondIF)
           4'b1000:  // ba
              BCH_Out = 1;
