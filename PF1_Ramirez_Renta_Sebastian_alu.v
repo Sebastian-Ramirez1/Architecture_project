@@ -186,7 +186,7 @@ module ALU_tb;
     ALU uut(Out, Flags, Op, A, B, Cin);
 
     initial begin
-        $display("\n Arithmetic Logic Unit (ALU):\n\n Op\tA\t\t\t\t  (Decimal)    B\t\t\t\t  (Decimal)  Cin  Out\t\t\t\t    (Decimal)    Z N C V");
+        //$display("\n Arithmetic Logic Unit (ALU):\n\n Op\tA\t\t\t\t  (Decimal)    B\t\t\t\t  (Decimal)  Cin  Out\t\t\t\t    (Decimal)    Z N C V");
         $monitor(" %b | %b %d | %b %d | %b | %b %d | %b %b %b %b ", Op, A, A, B, B, Cin, Out, Out, Flags[3], Flags[2], Flags[1], Flags[0]);
 
         //A + B
