@@ -205,11 +205,11 @@ module PF4ModuloPrueba;
     // PipelineRegister_MEM_WB PipelineRegister_MEM_WB({WB_PW, WB_RD, WB_RF_enable}, Clk, {MEM_PW, MEM_RD, MEM_RF_enable}, R);
     PipelineRegister_MEM_WB PipelineRegister_MEM_WB(MEM_WB_out, Clk, MEM_WB_in, R);
 
-    initial #100 $finish;
+    initial #160 $finish;
 
     //Precargar file a Intruction Memory
     initial begin
-        fr = $fopen("Fase4Memory.txt", "r");
+        fr = $fopen("testcode_sparc1.txt", "r");
         Address = 32'b00000000000000000000000000000000;
         while(!$feof(fr)) //fin del file
             begin
@@ -222,7 +222,7 @@ module PF4ModuloPrueba;
     end
 
     initial begin
-        fr = $fopen("Fase4Memory.txt","r");
+        fr = $fopen("testcode_sparc1.txt","r");
         Address = 32'b00000000000000000000000000000000;
         while (!$feof(fr)) 
             begin
@@ -252,20 +252,22 @@ module PF4ModuloPrueba;
     end
 
     initial begin
-
-        // $monitor("Instruccion_IF: %b PC: %d nPC: %d Reset: %b  pC_nPC_enable: %b, IF_ID_Enable: %b  S: %b  Time: %d \n Intruction_ID: %b, ID_ALU_op3 %b ID_jmpl_instr: %b , ID_Read_Write: %b , ID_SE_dm: %b , ID_load_instr: %b , ID_RF_enable: %b , ID_size_dm: %b , ID_modifyCC: %b , ID_Call_instr: %b , ID_B_instr: %b , ID_29_a: %b , ID_DataMem_Enable: %b, ID_RA: %d, ID_RB: %d, ID_RD: %d, ID_RDataIN: %d, ID_PC: %d, sig_MUX_PA: %b, MUX_PA_Out: %d, sig_MUX_PB: %b, MUX_PB_Out: %d, Sig_MUX_DataIn: %b, MUX_DataIn_Out: %d, BranchCOndition: %b, MUX_IF_signal: %b \n EX_jmpl_instr: %b, EX_ALU_op: %b , EX_Read_Write: %b, EX_SE_dm: %b , EX_load_instr: %b , EX_RF_enable: %b, EX_size_dm: %b , EX_modifyCC: %b , EX_call_instr: %b , EX_DataMem_enable: %b, EX_RD: %d, EX_PC: %d, EX_ALU_Out: %d, EX_PA: %d, EX_PB: %d, EX_Imm: %d, SourceOperandHanlder_Out: %d, EX_ALU_Flags: %b, PSR_Out: %b, MUXCC_Out: %b \n MEM_jmpl_instr: %b , MEM_Read_Write: %b , MEM_SE_dm: %b , MEM_load_instr: %b , MEM_RF_enable: %b , MEM_size_dm: %b , MEM_call_instr: %b , MEM_DataMem_enable: %b, MEM_RD: %d, MEM_PC: %d, MEM_PW: %d, MEM_Data_Load: %d, MEM_ALU_OUT: %d \n WB_RF_enable: %b, WB_RD: %d, WB_PW: %d\n", 
-        // InstructionMemory_Out, PC_Out, nPC_Out, IFID_Reset_Signal, PC_nPC_enable, IF_ID_enable , S, $time, Instruction_ControlUnit ,ID_ALU_op3, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_DataMem_enable, ID_RA, ID_RB, ID_RD, /*ID_RDataIn*/ ID_RD, ID_PC, Sig_MUX_PA, MUX_PA_Out, Sig_MUX_PB, MUX_PB_Out, Sig_MUX_DataIn, MUX_DataIn_Out, BranchCondition_Out, MUX_IF_Signal,
+        //General Signals
+        // $monitor("Instruccion_IF: %b PC: %d nPC: %d Reset: %b  pC_nPC_enable: %b, IF_ID_Enable: %b  S: %b  Time: %d \n Intruction_ID: %b, ID_ALU_op3 %b ID_jmpl_instr: %b , ID_Read_Write: %b , ID_SE_dm: %b , ID_load_instr: %b , ID_RF_enable: %b , ID_size_dm: %b , ID_modifyCC: %b , ID_Call_instr: %b , ID_B_instr: %b , ID_29_a: %b , ID_DataMem_Enable: %b, ID_RA: %d, ID_RB: %d, ID_RD: %d, ID_RDataIN: %d, ID_PC: %d, sig_MUX_PA: %b, MUX_PA_Out: %d, sig_MUX_PB: %b, MUX_PB_Out: %d, Sig_MUX_DataIn: %b, MUX_DataIn_Out: %d, BranchCOndition: %b, MUX_IF_signal: %b, Target_Address: %d, ID_BranchDisp22: %d, ID_BranchDisp22_SE: %d, Multiplicador4_Out: %d, Z: %b \n EX_jmpl_instr: %b, EX_ALU_op: %b , EX_Read_Write: %b, EX_SE_dm: %b , EX_load_instr: %b , EX_RF_enable: %b, EX_size_dm: %b , EX_modifyCC: %b , EX_call_instr: %b , EX_DataMem_enable: %b, EX_RD: %d, EX_PC: %d, EX_ALU_Out: %d, EX_PA: %d, EX_PB: %d, EX_Imm: %d, SourceOperandHanlder_Out: %d, EX_ALU_Flags: %b, PSR_Out: %b, MUXCC_Out: %b \n MEM_jmpl_instr: %b , MEM_Read_Write: %b , MEM_SE_dm: %b , MEM_load_instr: %b , MEM_RF_enable: %b , MEM_size_dm: %b , MEM_call_instr: %b , MEM_DataMem_enable: %b, MEM_RD: %d, MEM_PC: %d, MEM_PW: %d, MEM_Data_Load: %d, MEM_ALU_OUT: %d \n WB_RF_enable: %b, WB_RD: %d, WB_PW: %d\n", 
+        // InstructionMemory_Out, PC_Out, nPC_Out, IFID_Reset_Signal, PC_nPC_enable, IF_ID_enable , S, $time, Instruction_ControlUnit ,ID_ALU_op3, ID_jmpl_instr, ID_Read_Write, ID_SE_dm, ID_load_instr, ID_RF_enable, ID_size_dm, ID_modifyCC, ID_Call_instr, ID_B_instr, ID_29_a, ID_DataMem_enable, ID_RA, ID_RB, ID_RD, /*ID_RDataIn*/ ID_RD, ID_PC, Sig_MUX_PA, MUX_PA_Out, Sig_MUX_PB, MUX_PB_Out, Sig_MUX_DataIn, MUX_DataIn_Out, BranchCondition_Out, MUX_IF_Signal, Target_Address, ID_BranchDisp22, ID_BranchDisp22_SE, Multiplicador4_Out, ConditionHandlerBranch.Z,
         // EX_jmpl_instr, EX_ALU_op3, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_Call_instr, EX_DataMem_enable, EX_RD, EX_PC, EX_ALU_Out, EX_PA, EX_PB, EX_Imm, SourceOperandHanlder_Out, EX_ALU_flags, PSR_Out, MUXCC_Out,
         // MEM_jmpl_instr, MEM_Read_Write, MEM_SE_dm, MEM_load_instr, MEM_RF_enable, MEM_size_dm, MEM_Call_instr, MEM_DataMem_enable, MEM_RD, MEM_PC, MEM_PW, MEM_Load_Data, MEM_ALU_Out,
         // WB_RF_enable, WB_RD, WB_PW);
-        //$monitor("PC: %d, MemoryAdress: %d, R1: %d, R3: %d, R5: %d, R8: %d, R10: %d, R11: %d, R12: %d, Time: %d", PC_Out, MEM_ALU_Out, RegisterFile.Q1, RegisterFile.Q3, RegisterFile.Q5, RegisterFile.Q8, RegisterFile.Q10, RegisterFile.Q11, RegisterFile.Q12, $time); //R3: %d, R5: %d, R8: %d, R10: %d, R11: %d, R12: %d
-        //$monitor("Instruccion: %b PC: %d nPC: %d, MUXPC_OUT: %d, Clk: %b  Reset: %b  LE: %b  S: %b  Time: %d\n IFID_Reset_Signal: %b, MUX_IF_Signal: %b, BranchCondition_Out: %b, EX_jmpl_instr: %b, ID_Call_instr: %b, ID_29_a: %b, ID_B_instr: %b", InstructionMemory_Out, PC_Out, nPC_Out, MUXPC_Out, Clk, R, LE, S, $time, IFID_Reset_Signal, MUX_IF_Signal, BranchCondition_Out, EX_jmpl_instr, ID_Call_instr, ID_29_a, ID_B_instr);
-        //Test Pipeline IF/ID
-        //$monitor("PC: %d, Inntruction: %b, IF_IF_In: %b, ID_PC: %b, CLK:: %b, time: %d, LE: %b", PC_Out,InstructionMemory_Out, Instruction_ControlUnit, ID_PC, Clk, $time, LE);
-        $monitor("PC: %d, R5: %d, R6: %d, R16: %d, R17: %d, R18: %d, Time: %d", 
-        PC_Out, RegisterFile.Q5, RegisterFile.Q6, RegisterFile.Q16, RegisterFile.Q17, RegisterFile.Q18, $time);
-        #71
-        $display("Address: %d, Word Content: %b", 56, {DataMemory.Mem[56], DataMemory.Mem[57], DataMemory.Mem[58], DataMemory.Mem[59]});
+
+        //Programa Prueba
+        // $monitor("PC: %d, R5: %d, R6: %d, R16: %d, R17: %d, R18: %d, Time: %d", 
+        // PC_Out, RegisterFile.Q5, RegisterFile.Q6, RegisterFile.Q16, RegisterFile.Q17, RegisterFile.Q18, $time);
+
+        //Programa #1
+        $monitor("PC: %d, R1: %d, R2: %d, R3: %d, R5: %d, R12: %d, Time: %d", 
+        PC_Out, RegisterFile.Q1, RegisterFile.Q2, RegisterFile.Q3, RegisterFile.Q5, RegisterFile.Q12, $time);
+        #159
+        $display("Address: %d, Word Content: %b", 44, {DataMemory.Mem[44], DataMemory.Mem[45], DataMemory.Mem[46], DataMemory.Mem[47]});
         $finish;
     end
     

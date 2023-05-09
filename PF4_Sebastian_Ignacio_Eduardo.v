@@ -900,17 +900,17 @@ module Hazard_Unit(Sig_MUX_PA, Sig_MUX_PB, Sig_MUX_DataIn, IF_ID_enable, PC_nPC_
         //Fowarding for RA (First Source Operand)
         if( (EX_RF_enable) && (ID_RA == EX_RD) ) 
             begin
-                $display("DATA Foward RA ID<-EX");
+                //$display("DATA Foward RA ID<-EX");
                 Sig_MUX_PA = 2'b01; //EX_ALU_Out
             end
         else if ( (MEM_RF_enable) && (ID_RA == MEM_RD) )
             begin
-                $display("DATA Foward RA ID<-MEM");
+                //$display("DATA Foward RA ID<-MEM");
                 Sig_MUX_PA = 2'b10; //MEM_PW
             end
         else if ( (WB_RF_enable) && (ID_RA == WB_RD) )
             begin
-                $display("DATA Foward RA ID<-WB");
+                //$display("DATA Foward RA ID<-WB");
                 Sig_MUX_PA = 2'b11; //WB_PW
             end
         else Sig_MUX_PA = 2'b00; //RegisterFile_Out
@@ -918,17 +918,17 @@ module Hazard_Unit(Sig_MUX_PA, Sig_MUX_PB, Sig_MUX_DataIn, IF_ID_enable, PC_nPC_
         //Fowarding for RB (Second Source Operand)
         if ( (EX_RF_enable) && (ID_RB == EX_RD) ) 
             begin
-                $display("DATA Foward RB ID<-EX");
+                //$display("DATA Foward RB ID<-EX");
                 Sig_MUX_PB = 2'b01; //EX_ALU_Out
             end
         else if ( (MEM_RF_enable) && (ID_RB == MEM_RD) )
             begin
-                $display("DATA Foward RB ID<-MEM");
+                //$display("DATA Foward RB ID<-MEM");
                 Sig_MUX_PB = 2'b10; //MEM_PW
             end
         else if ( (WB_RF_enable) && (ID_RB == WB_RD) )
             begin
-                $display("DATA Foward RB ID<-WB");
+                //$display("DATA Foward RB ID<-WB");
                 Sig_MUX_PB = 2'b11; //WB_PW
             end
         else Sig_MUX_PB = 2'b00; //RegisterFile_Out
@@ -936,17 +936,17 @@ module Hazard_Unit(Sig_MUX_PA, Sig_MUX_PB, Sig_MUX_DataIn, IF_ID_enable, PC_nPC_
         //Fowarding RDataIn (Store Source Operand)
         if ( (EX_RF_enable) && (ID_RDataIn == EX_RD) && (ID_Read_Write == 1) ) 
             begin
-                $display("DATA Foward RDataIn ID<-EX");
+                //$display("DATA Foward RDataIn ID<-EX");
                 Sig_MUX_DataIn = 2'b01; //EX_ALU_Out
             end
         else if ( (MEM_RF_enable) && (ID_RDataIn == MEM_RD) && (ID_Read_Write == 1) )
             begin
-                $display("DATA Foward RDataIn ID<-MEM");
+                //$display("DATA Foward RDataIn ID<-MEM");
                 Sig_MUX_DataIn = 2'b10; //MEM_PW
             end
         else if ( (WB_RF_enable) && (ID_RDataIn == WB_RD) && (ID_Read_Write == 1) )
             begin
-                $display("DATA Foward RDataIn ID<-WB");
+                //$display("DATA Foward RDataIn ID<-WB");
                 Sig_MUX_DataIn = 2'b11; //WB_PW
             end
         else Sig_MUX_DataIn = 2'b00; //RegisterFile_out
