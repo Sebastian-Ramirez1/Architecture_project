@@ -65,10 +65,11 @@ module PF4ModuloPrueba;
     wire [31:0] MUX_PB_Out;
     
     wire [3:0] ID_31_30_24_13 = {Instruction_ControlUnit[31], Instruction_ControlUnit[30], Instruction_ControlUnit[24], Instruction_ControlUnit[13]};
+    wire I23 = Instruction_ControlUnit[23];
     wire [21:0] ID_Imm = {Instruction_ControlUnit[21:0]};
     wire [3:0] InstrCondIF = {Instruction_ControlUnit[28:25]};
 
-    wire [172:0] ID_EX_in = {ID_PC, MUX_DataIn_Out, MUX_PA_Out, MUX_PB_Out, ID_RD_MUX, ID_31_30_24_13, ID_Imm, Mux_out};
+    wire [173:0] ID_EX_in = {ID_PC, MUX_DataIn_Out, MUX_PA_Out, MUX_PB_Out, ID_RD_MUX, ID_31_30_24_13, I23 ,ID_Imm, Mux_out};
     
     // ID Control Signals for Monitor Function
     assign ID_jmpl_instr = Mux_out[13];
@@ -85,7 +86,7 @@ module PF4ModuloPrueba;
     // wire [4:0] ID_RDataIn = {Instruction_ControlUnit[29:25]};
     
     //Output Signals for PipelineRegister_ID_EX
-    wire [172:0] ID_EX_out;
+    wire [173:0] ID_EX_out;
     
     wire [31:0] EX_PC; 
     wire [31:0] EX_DataIn; 
@@ -108,7 +109,7 @@ module PF4ModuloPrueba;
     wire [1:0] EX_size_dm; 
     wire [3:0] EX_ALU_op3;
 
-    assign {EX_PC, EX_DataIn, EX_PA, EX_PB, EX_RD, EX_31_30_24_13, EX_Imm, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_Call_instr, EX_DataMem_enable} = ID_EX_out;
+    assign {EX_PC, EX_DataIn, EX_PA, EX_PB, EX_RD, EX_31_30_24_13, EX_I23 ,EX_Imm, EX_jmpl_instr, EX_Read_Write, EX_ALU_op3, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_modifyCC, EX_Call_instr, EX_DataMem_enable} = ID_EX_out;
 
     //Input signals EX_MEM
     wire [109:0] EX_MEM_in = {EX_PC, EX_DataIn, EX_ALU_Out, EX_RD, EX_jmpl_instr, EX_Read_Write, EX_SE_dm, EX_load_instr, EX_RF_enable, EX_size_dm, EX_Call_instr, EX_DataMem_enable};
@@ -162,7 +163,7 @@ module PF4ModuloPrueba;
 // ETAPAIF
 
     //PipelineRegister_IF_ID PipelineRegister_IF_ID(IF_ID_out, Clk, IF_ID_in, LE, R);
-    PipelineRegister_IF_ID PipelineRegister_IF_ID(IF_ID_out, Clk, IF_ID_in, LE, R, IFID_Reset_Signal);
+    PipelineRegister_IF_ID PipelineRegister_IF_ID(IF_ID_out, Clk, IF_ID_in, IF_ID_enable, R, IFID_Reset_Signal);
 
     ControlUnit ControlUnit(Control_Unit_Out, Instruction_ControlUnit);
 
@@ -187,7 +188,7 @@ module PF4ModuloPrueba;
 
 // ETAPA EX
     ALU ALU(EX_ALU_Out, EX_ALU_flags, EX_ALU_op3, EX_PA, SourceOperandHanlder_Out, EX_Cin);
-    Source_Operand2_Handler Source_Operand2_Handler(SourceOperandHanlder_Out, EX_31_30_24_13, EX_PB, EX_Imm);
+    Source_Operand2_Handler Source_Operand2_Handler(SourceOperandHanlder_Out, EX_31_30_24_13, EX_PB, EX_Imm, EX_I23);
 
     ProgramStatusRegister PSR(EX_Cin, PSR_Out, EX_ALU_flags, EX_modifyCC);
     MUX_CC MUX_CC(MUXCC_Out, EX_ALU_flags, PSR_Out, EX_modifyCC);
@@ -198,18 +199,18 @@ module PF4ModuloPrueba;
 
 //ETAPA MEM
     DataMemory DataMemory(MEM_Load_Data, MEM_Read_Write, MEM_ALU_Out, MEM_DataIn, MEM_size_dm, MEM_SE_dm, MEM_DataMem_enable); //DataMemory
-    MEM_MUX_RF MEM_MUX_RF (MEM_PW, MEM_PC, MEM_ALU_Out, MEM_Load_Data, MEM_load_instr, MEM_jmpl_instr, MEM_call_instr); //MUX MEM
+    MEM_MUX_RF MEM_MUX_RF (MEM_PW, MEM_PC, MEM_ALU_Out, MEM_Load_Data, MEM_load_instr, MEM_jmpl_instr, MEM_Call_instr); //MUX MEM
 //MEM
 
 //ETAPA WB
     // PipelineRegister_MEM_WB PipelineRegister_MEM_WB({WB_PW, WB_RD, WB_RF_enable}, Clk, {MEM_PW, MEM_RD, MEM_RF_enable}, R);
     PipelineRegister_MEM_WB PipelineRegister_MEM_WB(MEM_WB_out, Clk, MEM_WB_in, R);
 
-    initial #160 $finish;
+    initial #250 $finish;
 
     //Precargar file a Intruction Memory
     initial begin
-        fr = $fopen("testcode_sparc1.txt", "r");
+        fr = $fopen("testcode_sparc2.txt", "r");
         Address = 32'b00000000000000000000000000000000;
         while(!$feof(fr)) //fin del file
             begin
@@ -222,7 +223,7 @@ module PF4ModuloPrueba;
     end
 
     initial begin
-        fr = $fopen("testcode_sparc1.txt","r");
+        fr = $fopen("testcode_sparc2.txt","r");
         Address = 32'b00000000000000000000000000000000;
         while (!$feof(fr)) 
             begin
@@ -264,10 +265,22 @@ module PF4ModuloPrueba;
         // PC_Out, RegisterFile.Q5, RegisterFile.Q6, RegisterFile.Q16, RegisterFile.Q17, RegisterFile.Q18, $time);
 
         //Programa #1
-        $monitor("PC: %d, R1: %d, R2: %d, R3: %d, R5: %d, R12: %d, Time: %d", 
-        PC_Out, RegisterFile.Q1, RegisterFile.Q2, RegisterFile.Q3, RegisterFile.Q5, RegisterFile.Q12, $time);
-        #159
-        $display("Address: %d, Word Content: %b", 44, {DataMemory.Mem[44], DataMemory.Mem[45], DataMemory.Mem[46], DataMemory.Mem[47]});
+        // $monitor("PC: %d, R1: %d, R2: %d, R3: %d, R5: %d, R12: %d, Time: %d", 
+        // PC_Out, RegisterFile.Q1, RegisterFile.Q2, RegisterFile.Q3, RegisterFile.Q5, RegisterFile.Q12, $time);
+
+        $monitor("PC: %d, R1: %d, R2: %d, R3: %d, R4: %d, R5: %d, R8: %d ,R10: %d, R11: %d, R12: %d, R15: %d, Intruccion_ID: %b, IF_ID_enable: %d, ControlUnit_ModifyCC: %b, EX_Modify: %b, MUX_DataIn: %b, MEM_ALU: %d, MEM_DataIn: %b, MEM_DataEnable: %b, MEM_ReadWrite: %b ,Time: %d", 
+        PC_Out, RegisterFile.Q1, RegisterFile.Q2, RegisterFile.Q3, RegisterFile.Q4 ,RegisterFile.Q5, RegisterFile.Q8, RegisterFile.Q10, RegisterFile.Q11, RegisterFile.Q12, RegisterFile.Q15, Instruction_ControlUnit, IF_ID_enable ,Control_Unit_Out[4] ,EX_modifyCC, MUX_DataIn_Out,MEM_ALU_Out, MEM_DataIn, MEM_DataMem_enable, MEM_Read_Write, $time);
+        #240
+        $display("Address: %d, Word Content: %b", 224, {DataMemory.Mem[224], DataMemory.Mem[225], DataMemory.Mem[226], DataMemory.Mem[227]});
+        $display("Address: %d, Word Content: %b", 228, {DataMemory.Mem[228], DataMemory.Mem[229], DataMemory.Mem[230], DataMemory.Mem[231]});
+        $display("Address: %d, Word Content: %b", 232, {DataMemory.Mem[232], DataMemory.Mem[233], DataMemory.Mem[234], DataMemory.Mem[235]});
+        $display("Address: %d, Word Content: %b", 236, {DataMemory.Mem[236], DataMemory.Mem[237], DataMemory.Mem[238], DataMemory.Mem[239]});
+        $display("Address: %d, Word Content: %b", 240, {DataMemory.Mem[240], DataMemory.Mem[241], DataMemory.Mem[242], DataMemory.Mem[243]});
+        $display("Address: %d, Word Content: %b", 244, {DataMemory.Mem[244], DataMemory.Mem[245], DataMemory.Mem[246], DataMemory.Mem[247]});
+        $display("Address: %d, Word Content: %b", 248, {DataMemory.Mem[248], DataMemory.Mem[249], DataMemory.Mem[250], DataMemory.Mem[251]});
+        $display("Address: %d, Word Content: %b", 252, {DataMemory.Mem[252], DataMemory.Mem[253], DataMemory.Mem[254], DataMemory.Mem[255]});
+        $display("Address: %d, Word Content: %b", 256, {DataMemory.Mem[256], DataMemory.Mem[257], DataMemory.Mem[258], DataMemory.Mem[259]});
+        $display("Address: %d, Word Content: %b", 260, {DataMemory.Mem[260], DataMemory.Mem[261], DataMemory.Mem[262], DataMemory.Mem[263]});
         $finish;
     end
     

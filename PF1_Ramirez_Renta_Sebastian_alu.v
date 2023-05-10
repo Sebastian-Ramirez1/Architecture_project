@@ -261,7 +261,7 @@ module ALU_tb;
 endmodule
 
 // Source Operand2 Handler Module
-module Source_Operand2_Handler(output reg[31:0] N, input[3:0] I, input[31:0] R, input[21:0] Imm);
+module Source_Operand2_Handler(output reg[31:0] N, input[3:0] I, input[31:0] R, input[21:0] Imm, input bit23);
 
     reg[31:0] intermediate;
 
@@ -289,8 +289,13 @@ module Source_Operand2_Handler(output reg[31:0] N, input[3:0] I, input[31:0] R, 
         case (I)
             4'd10:
             begin
-                N = (R | 32'hFFFFFFE0) + 32'h20;
+                if(bit23 == 1'b1)begin
+                    if(I[0] == 1'b0) N = R; //Is = Bit13
+                    else N = {{19{Imm[12]}}, Imm[12:0]};
+                end
+                else N = {{27{1'b0}}, R[4:0]};
             end
+            //N = (R | 32'hFFFFFFE0) + 32'h20;
 
             4'd11: 
             begin
@@ -303,115 +308,115 @@ module Source_Operand2_Handler(output reg[31:0] N, input[3:0] I, input[31:0] R, 
 endmodule
 
 // Source Operand2 Handler Test Bench
-module Source_Operand_Handler_tb;
+// module Source_Operand_Handler_tb;
 
-    reg[31:0] R;
-    reg[21:0] Imm;
-    reg[3:0] I;
+//     reg[31:0] R;
+//     reg[21:0] Imm;
+//     reg[3:0] I;
 
-    wire[31:0] N;
+//     wire[31:0] N;
 
-    Source_Operand2_Handler uut(N, I, R, Imm);
+//     Source_Operand2_Handler uut(N, I, R, Imm);
 
-    initial
-    begin
-        #500;
+//     initial
+//     begin
+//         #500;
 
-        $display("\n Source Operand2 Handler:\n\n Part 1: Imm = 1000110001000100010011\n I\tR\t\t\t\t   Imm\t\t\t    N ");
-        $monitor(" %b | %b | %b | %b ", I, R, Imm, N);
+//         $display("\n Source Operand2 Handler:\n\n Part 1: Imm = 1000110001000100010011\n I\tR\t\t\t\t   Imm\t\t\t    N ");
+//         $monitor(" %b | %b | %b | %b ", I, R, Imm, N);
         
-        // Part 1: Imm = 1000110001000100010011
-        // 0000 <= I <= 0011: Imm || 0b0000000000
-        I = 4'd0; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         // Part 1: Imm = 1000110001000100010011
+//         // 0000 <= I <= 0011: Imm || 0b0000000000
+//         I = 4'd0; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        I = 4'd1; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         I = 4'd1; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        I = 4'd2; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         I = 4'd2; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        I = 4'd3; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         I = 4'd3; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        // 0100 <= I <= 0111: Imm (Sign Extended)
-        I = 4'd4; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         // 0100 <= I <= 0111: Imm (Sign Extended)
+//         I = 4'd4; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        I = 4'd5; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         I = 4'd5; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        I = 4'd6; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         I = 4'd6; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        I = 4'd7; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         I = 4'd7; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        // R
-        I = 4'd8; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         // R
+//         I = 4'd8; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        // Imm(12-0) (sign extended)
-        I = 4'd9; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         // Imm(12-0) (sign extended)
+//         I = 4'd9; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        // 0b0000…000 ||R(4-0)
-        I = 4'd10; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         // 0b0000…000 ||R(4-0)
+//         I = 4'd10; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        // 0b0000…000 ||Imm(4-0)
-        I = 4'd11; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         // 0b0000…000 ||Imm(4-0)
+//         I = 4'd11; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        // R
-        I = 4'd12; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         // R
+//         I = 4'd12; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        // Imm(12-0) (sign extended)
-        I = 4'd13; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         // Imm(12-0) (sign extended)
+//         I = 4'd13; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        // R
-        I = 4'd14; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         // R
+//         I = 4'd14; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        // Imm(12-0) (sign extended)
-        I = 4'd15; R = 32'hE0000003; Imm = 22'h231113; #20;
-        $display();
+//         // Imm(12-0) (sign extended)
+//         I = 4'd15; R = 32'hE0000003; Imm = 22'h231113; #20;
+//         $display();
 
-        // Part 2: Imm = 1000110000000100010011 
-        $display("\n Part 2: Imm = 1000110000000100010011\n I\tR\t\t\t\t   Imm\t\t\t    N ");
-        // R
-        I = 4'd8; R = 32'hE0000003; Imm = 22'h230113; #20;
-        $display();
+//         // Part 2: Imm = 1000110000000100010011 
+//         $display("\n Part 2: Imm = 1000110000000100010011\n I\tR\t\t\t\t   Imm\t\t\t    N ");
+//         // R
+//         I = 4'd8; R = 32'hE0000003; Imm = 22'h230113; #20;
+//         $display();
 
-        // Imm(12-0) (sign extended)
-        I = 4'd9; R = 32'hE0000003; Imm = 22'h230113; #20;
-        $display();
+//         // Imm(12-0) (sign extended)
+//         I = 4'd9; R = 32'hE0000003; Imm = 22'h230113; #20;
+//         $display();
 
-        // 0b0000…000 ||R(4-0)
-        I = 4'd10; R = 32'hE0000003; Imm = 22'h230113; #20;
-        $display();
+//         // 0b0000…000 ||R(4-0)
+//         I = 4'd10; R = 32'hE0000003; Imm = 22'h230113; #20;
+//         $display();
 
-        // 0b0000…000 ||Imm(4-0)
-        I = 4'd11; R = 32'hE0000003; Imm = 22'h230113; #20;
-        $display();
+//         // 0b0000…000 ||Imm(4-0)
+//         I = 4'd11; R = 32'hE0000003; Imm = 22'h230113; #20;
+//         $display();
 
-        // R
-        I = 4'd12; R = 32'hE0000003; Imm = 22'h230113; #20;
-        $display();
+//         // R
+//         I = 4'd12; R = 32'hE0000003; Imm = 22'h230113; #20;
+//         $display();
 
-        // Imm(12-0) (sign extended)
-        I = 4'd13; R = 32'hE0000003; Imm = 22'h230113; #20;
-        $display();
+//         // Imm(12-0) (sign extended)
+//         I = 4'd13; R = 32'hE0000003; Imm = 22'h230113; #20;
+//         $display();
 
-        // R
-        I = 4'd14; R = 32'hE0000003; Imm = 22'h230113; #20;
-        $display();
+//         // R
+//         I = 4'd14; R = 32'hE0000003; Imm = 22'h230113; #20;
+//         $display();
 
-        // Imm(12-0) (sign extended)
-        I = 4'd15; R = 32'hE0000003; Imm = 22'h230113; #20;
+//         // Imm(12-0) (sign extended)
+//         I = 4'd15; R = 32'hE0000003; Imm = 22'h230113; #20;
 
-    end
+//     end
 
-endmodule
+// endmodule

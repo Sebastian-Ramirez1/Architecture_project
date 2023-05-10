@@ -620,6 +620,7 @@ module PipelineRegister_IF_ID(Q, Clk, D, LE, R, IF_ID_Reset); //eliminar LE
         if (R) Q <= 0; //un reset tienen el efecto de hacer cero todos los bits de salida del registro.
         else if (IF_ID_Reset) Q <= 0; 
         else if (LE) Q <= D; // LE = 1  D --> Q //else
+        $display("LE: %b", LE);
     end
 endmodule
 
@@ -632,13 +633,13 @@ module PipelineRegister_ID_EX(Q, Clk, D, R);
     //ID_Imm = 22bits
     //ID_RD = 5 bits
     //ID_31_30_24_13 = 4bits = 173 bits
-    input [172:0] D;
+    input [173:0] D;
     input Clk;
     input R;
-    output reg [172:0] Q;
+    output reg [173:0] Q;
 
     always @(posedge Clk) begin
-        if (R) Q <= 173'b0;
+        if (R) Q <= 174'b0;
         else Q <= D;
     end
 endmodule
@@ -683,10 +684,16 @@ module MEM_MUX_RF (Data_Out, PC, ALU_Out, Load_Data, MEM_load_instr, MEM_jmpl_in
     output reg [31:0] Data_Out;
 
     always @(*) begin
-        if (MEM_call_instr) Data_Out = PC;
+        if (MEM_call_instr) 
+            begin
+                //$display("PC");
+                Data_Out = PC;
+            end
         else if (MEM_jmpl_instr) Data_Out = ALU_Out;
         else if (MEM_load_instr) Data_Out = Load_Data;
         else Data_Out = ALU_Out;
+
+        //$display("MEM_MUX: %d, MEM_Call: %b", Data_Out, MEM_call_instr);
     end
     
 endmodule
@@ -936,17 +943,17 @@ module Hazard_Unit(Sig_MUX_PA, Sig_MUX_PB, Sig_MUX_DataIn, IF_ID_enable, PC_nPC_
         //Fowarding RDataIn (Store Source Operand)
         if ( (EX_RF_enable) && (ID_RDataIn == EX_RD) && (ID_Read_Write == 1) ) 
             begin
-                //$display("DATA Foward RDataIn ID<-EX");
+                $display("DATA Foward RDataIn ID<-EX");
                 Sig_MUX_DataIn = 2'b01; //EX_ALU_Out
             end
         else if ( (MEM_RF_enable) && (ID_RDataIn == MEM_RD) && (ID_Read_Write == 1) )
             begin
-                //$display("DATA Foward RDataIn ID<-MEM");
+                $display("DATA Foward RDataIn ID<-MEM");
                 Sig_MUX_DataIn = 2'b10; //MEM_PW
             end
         else if ( (WB_RF_enable) && (ID_RDataIn == WB_RD) && (ID_Read_Write == 1) )
             begin
-                //$display("DATA Foward RDataIn ID<-WB");
+                $display("DATA Foward RDataIn ID<-WB");
                 Sig_MUX_DataIn = 2'b11; //WB_PW
             end
         else Sig_MUX_DataIn = 2'b00; //RegisterFile_out
